@@ -2,6 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import animation
 from matplotlib.animation import FuncAnimation
+import cv2
 
 ARENA_SIDE_LENGTH = 10
 NUMBER_OF_ROBOTS = 50
