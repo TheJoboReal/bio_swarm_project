@@ -43,6 +43,7 @@ def distance_between_agents(i, j):
     return distance
 
 
+#kilde: https://keyirobot.com/blogs/buying-guide/exploring-swarm-robotics-programming-multiple-simple-agents
 def cohesion(i, min_distance_threshold_bedreNavnErEnGodIde):
     # For every robot/agent/boid (find et navn) we need to find the average x and y position of its neighbors
     avg_x = 0
