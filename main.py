@@ -45,30 +45,51 @@ def distance_between_agents(i, j):
 
 #kilde: https://keyirobot.com/blogs/buying-guide/exploring-swarm-robotics-programming-multiple-simple-agents
 #Kilde2: https://medium.com/better-programming/boids-simulating-birds-flock-behavior-in-python-9fff99375118
-def cohesion(i, min_distance_threshold_bedreNavnErEnGodIde):
+def cohesion(i, min_distanceThreshold_for_cohesion_bedreNavnErEnGodIde): #tiltrækning til naboer
     # For every robot/agent/boid (find et navn) we need to find the average x and y position of its neighbors
     avg_x = 0
     avg_y = 0
-    count = 0
+    denumerator_in_avg_calculation = 0
 
     # Loop through the robots and find avg
     for j in range(NUMBER_OF_ROBOTS):
-        if i != j:
-            distance = distance_between_agents(i, j)
+        if i != j: #ensure different neighbor
 
-            if distance < min_distance_threshold_bedreNavnErEnGodIde:
+            #Check that distnace to neighbor j is within threshold
+            distance = distance_between_agents(i, j)
+            if distance < min_distanceThreshold_for_cohesion_bedreNavnErEnGodIde:
                 avg_x += x[j] # ligger nabos position til avg_x
-                avg_y += y[j] # ligger nabos position til avg_y
-                count += 1 #skal bruges til at dividere med for at få gennemsnit
+                avg_y += y[j] # og for y også
+                denumerator_in_avg_calculation += 1 #skal bruges til at dividere med for at få gennemsnit
 
     # Find average by dividing by number of neigbors
-    if count > 0:
-        avg_x = avg_x / count
-        avg_y = avg_y / count
-        return avg_x - x[i], avg_y - y[i]
+    if denumerator_in_avg_calculation > 0:
+        avg_x = avg_x / denumerator_in_avg_calculation
+        avg_y = avg_y / denumerator_in_avg_calculation
+        return avg_x - x[i], avg_y - y[i] 
 
     #Does nothing if no neighbor
     return 0.0, 0.0
+
+#kilde: https://keyirobot.com/blogs/buying-guide/exploring-swarm-robotics-programming-multiple-simple-agents
+def separation(i, min_seperation_distance_threshold):
+    # Which direction the agents will move according to seperation
+    sx = 0.0
+    sy = 0.0
+    
+    #Loop through nearby (given by threshold) neighbors
+    for j in range(NUMBER_OF_ROBOTS):
+        if i != j:#ensure different neighbor
+
+            #Check that distnace to neighbor j is within threshold
+            distance = distance_between_agents(i, j)
+            if distance < min_seperation_distance_threshold:
+                sx -= x[j] #minus ensures agent moves away from other agents -> repels neighbors
+                sy -= x[j] 
+                
+
+    return sx, sy
+
 
 def update(vx, vy):
     new_vx = np.copy(vx)
@@ -76,12 +97,12 @@ def update(vx, vy):
 
     for i in range(NUMBER_OF_ROBOTS):
         cx, cy = cohesion(i, 1.5); #print(cx, cy)
-        #sx, sy = seperation function here
+        sx, sy = separation(i, 1.0)
         #ax, ay = allignment function indsæt her
 
         #Update speed
-        new_vx[i] += cx
-        new_vy[i] += cy
+        new_vx[i] += cx + sx
+        new_vy[i] += cy + sy
 
         #Enforce max speed
         new_vx[i], new_vy[i] = enforce_max_speed_limit(new_vx[i], new_vy[i])
