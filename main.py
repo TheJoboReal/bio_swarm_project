@@ -103,7 +103,7 @@ def separation(i, min_seperation_distance_threshold):
 
 #################### ALIGNMENT ####################
 #kilde: https://keyirobot.com/blogs/buying-guide/exploring-swarm-robotics-programming-multiple-simple-agents
-def alignment_V_Based(i, min_alligment_distance_threshold):
+def alignment_Velocity_Based(i, min_alligment_distance_threshold):
     #variables for avg speed
     avg_vx = 0.0
     avg_vy = 0.0
@@ -149,7 +149,7 @@ def update(vx, vy):
     for i in range(NUMBER_OF_ROBOTS):
         cx, cy = cohesion(i, 1.5); #print(cx, cy)
         sx, sy = separation(i, 1.0)
-        ax, ay = alignment_V_Based(i, 1.25)
+        ax, ay = alignment_Velocity_Based(i, 1.25)
 
 
         #Update speed
