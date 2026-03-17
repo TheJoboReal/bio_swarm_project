@@ -27,7 +27,7 @@ class Bird:
     def find_neighbors(self, snippet):
         #Todo: tager en en kvadrat af imaget omkring vores agent --> skal nok være en cirkel optimalt?
         # så det bliver ud fra hvad den "ser" og ikke hvor de nadre siger de er.
-        cv2.imshow(f"bird {self.id}", snippet)
+        cv2.imshow(f"agent {self.id}", snippet)
         #               Øverste
         # (0.0)         0 
         #               1
@@ -86,7 +86,7 @@ class Bird:
                     # noget true her
                     left = True
 
-        print(f"bird {self.id} ", above,right,down,left)
+        print(f"agent {self.id} ", above,right,down,left)
         
 
         # chattens hurtige svar ... deprimerende simpelt --> skal vi bruge det?
