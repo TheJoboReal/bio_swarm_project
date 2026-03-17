@@ -11,8 +11,10 @@ MAX_SPEED = 0.1
 
 ### Initiate random robots with random positions and velocities.
 # Positions
-x = np.random.uniform(low=0, high=ARENA_SIDE_LENGTH, size=(NUMBER_OF_ROBOTS,))
-y = np.random.uniform(low=0, high=ARENA_SIDE_LENGTH, size=(NUMBER_OF_ROBOTS,))
+# x = np.random.uniform(low=0, high=ARENA_SIDE_LENGTH, size=(NUMBER_OF_ROBOTS,))
+# y = np.random.uniform(low=0, high=ARENA_SIDE_LENGTH, size=(NUMBER_OF_ROBOTS,))
+x = np.random.uniform(low=ARENA_SIDE_LENGTH/4, high=3*ARENA_SIDE_LENGTH/4, size=(NUMBER_OF_ROBOTS,)) #Initiate agents in the "middle" of arena
+y = np.random.uniform(low=ARENA_SIDE_LENGTH/4, high=3*ARENA_SIDE_LENGTH/4, size=(NUMBER_OF_ROBOTS,)) #Initiate agents in the "middle" of arena
 
 # Velocities
 vx = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_ROBOTS,))
@@ -49,7 +51,7 @@ def distance_between_agents(i, j):
 #################### COHESION ####################
 #kilde: https://keyirobot.com/blogs/buying-guide/exploring-swarm-robotics-programming-multiple-simple-agents
 #Kilde2: https://medium.com/better-programming/boids-simulating-birds-flock-behavior-in-python-9fff99375118
-def cohesion(i, min_distanceThreshold_for_cohesion_bedreNavnErEnGodIde): #tiltrækning til naboer
+def cohesion(i, max_distanceThreshold_for_cohesion): #tiltrækning til naboer
     # For every robot/agent/boid (find et navn) we need to find the average x and y position of its neighbors
     avg_x = 0
     avg_y = 0
@@ -61,7 +63,7 @@ def cohesion(i, min_distanceThreshold_for_cohesion_bedreNavnErEnGodIde): #tiltr�
 
             #Check that distnace to neighbor j is within threshold
             distance = distance_between_agents(i, j)
-            if distance < min_distanceThreshold_for_cohesion_bedreNavnErEnGodIde:
+            if distance < max_distanceThreshold_for_cohesion:
                 avg_x += x[j] # ligger nabos position til avg_x
                 avg_y += y[j] # og for y også
                 denominator_in_avg_calculation += 1 #skal bruges til at dividere med for at få gennemsnit
@@ -79,7 +81,7 @@ def cohesion(i, min_distanceThreshold_for_cohesion_bedreNavnErEnGodIde): #tiltr�
 
 #################### SEPARATION ####################
 #kilde: https://keyirobot.com/blogs/buying-guide/exploring-swarm-robotics-programming-multiple-simple-agents
-def separation(i, min_seperation_distance_threshold):
+def separation(i, max_seperation_distance_threshold):
     # Which direction the agents will move according to seperation
     sx = 0.0
     sy = 0.0
@@ -90,7 +92,7 @@ def separation(i, min_seperation_distance_threshold):
 
             #Check that distnace to neighbor j is within threshold
             distance = distance_between_agents(i, j)
-            if distance < min_seperation_distance_threshold:
+            if distance < max_seperation_distance_threshold:
                 #Calc difference betweeen agent i and -j
                 dx = x[j] - x[i]
                 dy = y[j] - y[i]
@@ -101,9 +103,9 @@ def separation(i, min_seperation_distance_threshold):
     return sx, sy
 
 
-#################### ALIGNMENT ####################
+#################### ALIGNMENT Velocity Based ###################
 #kilde: https://keyirobot.com/blogs/buying-guide/exploring-swarm-robotics-programming-multiple-simple-agents
-def alignment_Velocity_Based(i, min_alligment_distance_threshold):
+def alignment_Velocity_Based(i, max_alligment_distance_threshold):
     #variables for avg speed
     avg_vx = 0.0
     avg_vy = 0.0
@@ -115,7 +117,7 @@ def alignment_Velocity_Based(i, min_alligment_distance_threshold):
             
             #Check that distnace to neighbor j is within threshold
             distance = distance_between_agents(i, j)
-            if distance < min_alligment_distance_threshold:
+            if distance < max_alligment_distance_threshold:
                 avg_vx += vx[j]
                 avg_vy += vy[j]
                 denominator_in_avg_calc += 1
@@ -131,6 +133,18 @@ def alignment_Velocity_Based(i, min_alligment_distance_threshold):
         return allignment_output_vx, allignment_output_vy
 
     return 0.0, 0.0
+
+
+#################### ALIGNMENT Velocity Based ###################
+def allignment_position_based(i, sensor_distance_threshold):
+    #Estimated velocity based on intial position of agents
+    est_vx = 0.0
+    est_vy = 0.0
+    denomiator_in_avg_calc = 0.0
+
+
+    print("hej")
+
 
 
 
