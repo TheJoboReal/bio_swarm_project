@@ -65,10 +65,12 @@ def cohesion_separation(i, sensor_range, delta):
             if distance < sensor_range:
                 neighbor_count += 1
 
+    #Calculate control input (/acceleration) for agent i
+    control_input = 0.0
     for j in range(NUMBER_OF_ROBOTS):
         if i != j:
             cohesion_separation_gain = i - delta * neighbor_count / np.sqrt(x[i]**2 + y[i]**2)
-
+            control
 
     return 0.0, 0.0
 
