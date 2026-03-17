@@ -5,7 +5,8 @@ from matplotlib.animation import FuncAnimation
 
 ARENA_SIDE_LENGTH = 20
 NUMBER_OF_ROBOTS = 30
-STEPS = 1200
+STEPS = 300#1200
+FPS = 60
 MAX_SPEED = 0.1
 
 
@@ -15,6 +16,10 @@ MAX_SPEED = 0.1
 # y = np.random.uniform(low=0, high=ARENA_SIDE_LENGTH, size=(NUMBER_OF_ROBOTS,))
 x = np.random.uniform(low=ARENA_SIDE_LENGTH/4, high=3*ARENA_SIDE_LENGTH/4, size=(NUMBER_OF_ROBOTS,)) #Initiate agents in the "middle" of arena
 y = np.random.uniform(low=ARENA_SIDE_LENGTH/4, high=3*ARENA_SIDE_LENGTH/4, size=(NUMBER_OF_ROBOTS,)) #Initiate agents in the "middle" of arena
+
+#Remember initial position for each agent
+initial_position_x = x
+initial_position_y = y
 
 # Velocities
 vx = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_ROBOTS,))
@@ -79,71 +84,87 @@ def cohesion(i, max_distanceThreshold_for_cohesion): #tiltrækning til naboer
 
 
 
-#################### SEPARATION ####################
-#kilde: https://keyirobot.com/blogs/buying-guide/exploring-swarm-robotics-programming-multiple-simple-agents
-def separation(i, max_seperation_distance_threshold):
-    # Which direction the agents will move according to seperation
-    sx = 0.0
-    sy = 0.0
+# #################### SEPARATION ####################
+# #kilde: https://keyirobot.com/blogs/buying-guide/exploring-swarm-robotics-programming-multiple-simple-agents
+# def separation(i, max_seperation_distance_threshold):
+#     # Which direction the agents will move according to seperation
+#     sx = 0.0
+#     sy = 0.0
     
-    #Loop through nearby (given by threshold) neighbors
-    for j in range(NUMBER_OF_ROBOTS):
-        if i != j:#ensure different neighbor
+#     #Loop through nearby (given by threshold) neighbors
+#     for j in range(NUMBER_OF_ROBOTS):
+#         if i != j:#ensure different neighbor
 
-            #Check that distnace to neighbor j is within threshold
-            distance = distance_between_agents(i, j)
-            if distance < max_seperation_distance_threshold:
-                #Calc difference betweeen agent i and -j
-                dx = x[j] - x[i]
-                dy = y[j] - y[i]
+#             #Check that distnace to neighbor j is within threshold
+#             distance = distance_between_agents(i, j)
+#             if distance < max_seperation_distance_threshold:
+#                 #Calc difference betweeen agent i and -j
+#                 dx = x[j] - x[i]
+#                 dy = y[j] - y[i]
 
-                sx -= dx #minus ensures agent moves away from other agents -> repels neighbors
-                sy -= dy
+#                 sx -= dx #minus ensures agent moves away from other agents -> repels neighbors
+#                 sy -= dy
                 
-    return sx, sy
+#     return sx, sy
 
 
-#################### ALIGNMENT Velocity Based ###################
-#kilde: https://keyirobot.com/blogs/buying-guide/exploring-swarm-robotics-programming-multiple-simple-agents
-def alignment_Velocity_Based(i, max_alligment_distance_threshold):
-    #variables for avg speed
-    avg_vx = 0.0
-    avg_vy = 0.0
-    denominator_in_avg_calc = 0.0
+# #################### ALIGNMENT Velocity Based ###################
+# #kilde: https://keyirobot.com/blogs/buying-guide/exploring-swarm-robotics-programming-multiple-simple-agents
+# def alignment_Velocity_Based(i, max_alligment_distance_threshold):
+#     #variables for avg speed
+#     avg_vx = 0.0
+#     avg_vy = 0.0
+#     denominator_in_avg_calc = 0.0
 
-    #  Find average speed of neighbors
-    for j in range(NUMBER_OF_ROBOTS):
-        if j != i: #ensure different neighbor
+#     #  Find average speed of neighbors
+#     for j in range(NUMBER_OF_ROBOTS):
+#         if j != i: #ensure different neighbor
             
-            #Check that distnace to neighbor j is within threshold
-            distance = distance_between_agents(i, j)
-            if distance < max_alligment_distance_threshold:
-                avg_vx += vx[j]
-                avg_vy += vy[j]
-                denominator_in_avg_calc += 1
+#             #Check that distnace to neighbor j is within threshold
+#             distance = distance_between_agents(i, j)
+#             if distance < max_alligment_distance_threshold:
+#                 avg_vx += vx[j]
+#                 avg_vy += vy[j]
+#                 denominator_in_avg_calc += 1
     
-    # Find average by dividing by number of neigbors within given threshold
-    if denominator_in_avg_calc > 0:
-        avg_vx = avg_vx / denominator_in_avg_calc
-        avg_vy = avg_vy / denominator_in_avg_calc
+#     # Find average by dividing by number of neigbors within given threshold
+#     if denominator_in_avg_calc > 0:
+#         avg_vx = avg_vx / denominator_in_avg_calc
+#         avg_vy = avg_vy / denominator_in_avg_calc
 
-        #Fra kilde: Speed += allignment - current speed
-        allignment_output_vx = avg_vx - vx[i]
-        allignment_output_vy = avg_vy - vy[i]
-        return allignment_output_vx, allignment_output_vy
+#         #Fra kilde: Speed += allignment - current speed
+#         allignment_output_vx = avg_vx - vx[i]
+#         allignment_output_vy = avg_vy - vy[i]
+#         return allignment_output_vx, allignment_output_vy
 
-    return 0.0, 0.0
-
-
-#################### ALIGNMENT Velocity Based ###################
-def allignment_position_based(i, sensor_distance_threshold):
-    #Estimated velocity based on intial position of agents
-    est_vx = 0.0
-    est_vy = 0.0
-    denomiator_in_avg_calc = 0.0
+#     return 0.0, 0.0
 
 
-    print("hej")
+# #################### ALIGNMENT Position Based ###################
+# def allignment_position_based(i, sensor_range_threshold):
+#     #Variables for estimated velocity based on intial position of agents
+#     est_ux = 0.0 
+#     est_uy = 0.0
+#     denomiator_in_avg_calc = 0.0
+
+#     #Estimate the velocity of neighboring agents
+#     for j in range(NUMBER_OF_ROBOTS):
+#         if i != j:
+            
+#             #Check if distance to neighbor is within sensor range
+#             distance = distance_between_agents(i,j)
+#             if distance < sensor_range_threshold:
+
+#                 hej_med_dig = (x[j] - initial_position_x[j]) / 1
+            
+
+
+#             print("hej")
+
+
+
+
+def cohesion_seperation(i)
 
 
 
@@ -155,20 +176,33 @@ def update(vx, vy):
     new_vy = np.copy(vy)
 
     #weights for controlling cohesion, separation and allignment
-    c_weight = 0.01 #0.01
-    s_weight = 0.05 #0.05
-    a_weight = 0.07 #0.03
+    cohesion_weight = 0.01 #0.01
+    separation_weight = 0.05 #0.05
+    alignment_weight = 0.07 #0.03
 
-    # Update each robot individually
+    # Update for each robot individually
     for i in range(NUMBER_OF_ROBOTS):
-        cx, cy = cohesion(i, 1.5); #print(cx, cy)
-        sx, sy = separation(i, 1.0)
-        ax, ay = alignment_Velocity_Based(i, 1.25)
+        # cohesion_vx, cohesion_vy = cohesion(i, 1.5); #print(cx, cy)
+        # separation_vx, separation_vy = separation(i, 1.0)
+        # alignment_vx, alignment_vy = alignment_Velocity_Based(i, 1.25) #Velocity based alignment
+        #alignment_vx, alignment_vy = alignment_position_based_without_threshold(i, 1.25) #Position based alignment
 
 
-        #Update speed
-        new_vx[i] += c_weight*cx + s_weight*sx + a_weight*ax
-        new_vy[i] += c_weight*cy + s_weight*sy + a_weight*ay
+
+        #### Update speed...
+        #... from cohesion
+        new_vx[i] += cohesion_weight * cohesion_vx
+        new_vy[i] += cohesion_weight * cohesion_vy
+
+        #... from separation
+        new_vx[i] += separation_weight * separation_vx
+        new_vy[i] += separation_weight * separation_vy
+
+        #... from allignment based on velocity
+        new_vx[i] += alignment_weight * alignment_vx
+        new_vy[i] += alignment_weight * alignment_vy
+
+
 
         #Enforce max speed
         new_vx[i], new_vy[i] = enforce_max_speed_limit(new_vx[i], new_vy[i])
@@ -194,7 +228,8 @@ def animate(i):
     #Update step
     vx, vy = update(vx, vy)
 
-    
+    #Update position
+    dt = 1/FPS    
     x = wrap(x + vx)
     y = wrap(y + vy)
 
@@ -206,5 +241,5 @@ def animate(i):
 
 anim = FuncAnimation(fig, animate, init_func=init, frames=STEPS, interval=1, blit=True)
 
-videowriter = animation.FFMpegWriter(fps=60)
+videowriter = animation.FFMpegWriter(fps=FPS)
 anim.save("output.mp4", writer=videowriter)
