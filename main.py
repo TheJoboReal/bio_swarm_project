@@ -4,53 +4,44 @@ from matplotlib import animation
 from matplotlib.animation import FuncAnimation
 import cv2
 
+from agent import *
+
 ARENA_SIDE_LENGTH = 20
 NUMBER_OF_ROBOTS = 30
 STEPS = 1200
-MAX_SPEED = 0.1
+MAX_SPEED = 2
 
+
+# Window width and height
+HEIGHT = 700 
+WIDTH = 700
 
 ### Initiate random robots with random positions and velocities.
 # Positions
-x = np.random.uniform(low=0, high=ARENA_SIDE_LENGTH, size=(NUMBER_OF_ROBOTS,))
-y = np.random.uniform(low=0, high=ARENA_SIDE_LENGTH, size=(NUMBER_OF_ROBOTS,))
-
-# Velocities
-vx = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_ROBOTS,))
-vy = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_ROBOTS,))
-
-# Set up the output (1024 x 768):
-fig = plt.figure(figsize=(10.24, 10.24), dpi=100)
-ax = plt.axes(xlim=(0, ARENA_SIDE_LENGTH), ylim=(0, ARENA_SIDE_LENGTH))
-(points,) = ax.plot(    
-    [],
-    [],
-    "bo",
-    lw=0,
-)
+# x = np.random.uniform(low=0, high=ARENA_SIDE_LENGTH, size=(NUMBER_OF_ROBOTS,))
+# y = np.random.uniform(low=0, high=ARENA_SIDE_LENGTH, size=(NUMBER_OF_ROBOTS,))
+#
+# # Velocities
+# vx = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_ROBOTS,))
+# vy = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_ROBOTS,))
 
 
-def enforce_max_speed_limit(vx_agent, vy_agent):
-    #Woop woop it's the sound of the police
-    speed = np.sqrt(vx_agent**2 + vy_agent**2)
 
-    if speed > MAX_SPEED:
-        vx_agent = vx_agent / speed * MAX_SPEED
-        vy_agent = vy_agent / speed * MAX_SPEED
-    return vx_agent, vy_agent
+def distance_between_agents(boid_og, neighbor):
+    x_og, y_og = boid_og.get_position()
+    x_nb, y_nb = neighbor.get_position()
 
-
-def distance_between_agents(i, j):
-    dist_x = x[j] - x[i]
-    dist_y = y[j] - y[i]
+    dist_x = x_nb - x_og
+    dist_y = y_nb - y_og
     distance = np.sqrt(dist_x**2 + dist_y**2)
+    #print("distance ", distance)
     return distance
 
 
 #################### COHESION ####################
 #kilde: https://keyirobot.com/blogs/buying-guide/exploring-swarm-robotics-programming-multiple-simple-agents
 #Kilde2: https://medium.com/better-programming/boids-simulating-birds-flock-behavior-in-python-9fff99375118
-def cohesion(i, min_distanceThreshold_for_cohesion_bedreNavnErEnGodIde): #tiltrækning til naboer
+def cohesion(boid_og, flock, min_distanceThreshold_for_cohesion): #tiltrækning til naboer
     # For every robot/agent/boid (find et navn) we need to find the average x and y position of its neighbors
     avg_x = 0
     avg_y = 0
@@ -58,20 +49,25 @@ def cohesion(i, min_distanceThreshold_for_cohesion_bedreNavnErEnGodIde): #tiltr�
 
     # Loop through the robots and find avg
     for j in range(NUMBER_OF_ROBOTS):
-        if i != j: #ensure different neighbor
-
+        if boid_og.get_id() != j: #ensure different neighbor
+            neighbor = flock[j]
             #Check that distnace to neighbor j is within threshold
-            distance = distance_between_agents(i, j)
-            if distance < min_distanceThreshold_for_cohesion_bedreNavnErEnGodIde:
-                avg_x += x[j] # ligger nabos position til avg_x
-                avg_y += y[j] # og for y også
+            distance = distance_between_agents(boid_og, neighbor)
+            if distance < min_distanceThreshold_for_cohesion:
+
+                x_nb, y_nb = neighbor.get_position()
+
+                avg_x += x_nb # ligger nabos position til avg_x
+                avg_y += y_nb # og for y også
                 denominator_in_avg_calculation += 1 #skal bruges til at dividere med for at få gennemsnit
 
     # Find average by dividing by number of neigbors
     if denominator_in_avg_calculation > 0:
+        x_og, y_og = boid_og.get_position()
+        
         avg_x = avg_x / denominator_in_avg_calculation
         avg_y = avg_y / denominator_in_avg_calculation
-        return avg_x - x[i], avg_y - y[i] 
+        return avg_x - x_og, avg_y - y_og 
 
     #Does nothing if no neighbor
     return 0.0, 0.0
@@ -80,21 +76,25 @@ def cohesion(i, min_distanceThreshold_for_cohesion_bedreNavnErEnGodIde): #tiltr�
 
 #################### SEPARATION ####################
 #kilde: https://keyirobot.com/blogs/buying-guide/exploring-swarm-robotics-programming-multiple-simple-agents
-def separation(i, min_seperation_distance_threshold):
+def separation(boid_og, flock, min_seperation_distance_threshold):
     # Which direction the agents will move according to seperation
     sx = 0.0
     sy = 0.0
     
     #Loop through nearby (given by threshold) neighbors
     for j in range(NUMBER_OF_ROBOTS):
-        if i != j:#ensure different neighbor
-
+        if boid_og.get_id() != j:#ensure different neighbor
+            
+            neighbor = flock[j]
             #Check that distnace to neighbor j is within threshold
-            distance = distance_between_agents(i, j)
+            distance = distance_between_agents(boid_og, neighbor)
             if distance < min_seperation_distance_threshold:
                 #Calc difference betweeen agent i and -j
-                dx = x[j] - x[i]
-                dy = y[j] - y[i]
+                x_og, y_og = boid_og.get_position()
+                x_nb, y_nb = neighbor.get_position()
+
+                dx = x_nb - x_og
+                dy = y_nb - y_og
 
                 sx -= dx #minus ensures agent moves away from other agents -> repels neighbors
                 sy -= dy
@@ -104,7 +104,7 @@ def separation(i, min_seperation_distance_threshold):
 
 #################### ALIGNMENT ####################
 #kilde: https://keyirobot.com/blogs/buying-guide/exploring-swarm-robotics-programming-multiple-simple-agents
-def alignment_Velocity_Based(i, min_alligment_distance_threshold):
+def alignment_Velocity_Based(boid_og, flock, min_alligment_distance_threshold):
     #variables for avg speed
     avg_vx = 0.0
     avg_vy = 0.0
@@ -112,13 +112,14 @@ def alignment_Velocity_Based(i, min_alligment_distance_threshold):
 
     #  Find average speed of neighbors
     for j in range(NUMBER_OF_ROBOTS):
-        if j != i: #ensure different neighbor
-            
+        if boid_og.get_id() != j: #ensure different neighbor
+            neighbor = flock[j]
             #Check that distnace to neighbor j is within threshold
-            distance = distance_between_agents(i, j)
+            distance = distance_between_agents(boid_og, neighbor)
             if distance < min_alligment_distance_threshold:
-                avg_vx += vx[j]
-                avg_vy += vy[j]
+                vx, vy = neighbor.get_velocity()
+                avg_vx += vx
+                avg_vy += vy
                 denominator_in_avg_calc += 1
     
     # Find average by dividing by number of neigbors within given threshold
@@ -127,71 +128,106 @@ def alignment_Velocity_Based(i, min_alligment_distance_threshold):
         avg_vy = avg_vy / denominator_in_avg_calc
 
         #Fra kilde: Speed += allignment - current speed
-        allignment_output_vx = avg_vx - vx[i]
-        allignment_output_vy = avg_vy - vy[i]
+
+        vx, vy = boid_og.get_velocity()
+        allignment_output_vx = avg_vx - vx
+        allignment_output_vy = avg_vy - vy
         return allignment_output_vx, allignment_output_vy
 
     return 0.0, 0.0
 
 
 
-
-def update(vx, vy):
-    #Variables for updating speed if agents
-    new_vx = np.copy(vx)
-    new_vy = np.copy(vy)
+def update_two(flock):
 
     #weights for controlling cohesion, separation and allignment
     c_weight = 0.01 #0.01
     s_weight = 0.05 #0.05
-    a_weight = 0.07 #0.03
+    a_weight = 0.03 #0.03
+
+    dt = 0.1
 
     # Update each robot individually
     for i in range(NUMBER_OF_ROBOTS):
-        cx, cy = cohesion(i, 1.5); #print(cx, cy)
-        sx, sy = separation(i, 1.0)
-        ax, ay = alignment_Velocity_Based(i, 1.25)
-
+        boid_og = flock[i] #original 
+        cx, cy = cohesion(boid_og, flock, 80); #print(cx, cy)
+        sx, sy = separation(boid_og, flock, 15)
+        ax, ay = alignment_Velocity_Based(boid_og, flock, 50)
 
         #Update speed
-        new_vx[i] += c_weight*cx + s_weight*sx + a_weight*ax
-        new_vy[i] += c_weight*cy + s_weight*sy + a_weight*ay
+        vx, vy = boid_og.get_velocity()
 
-        #Enforce max speed
-        new_vx[i], new_vy[i] = enforce_max_speed_limit(new_vx[i], new_vy[i])
+        vx += dt * (c_weight * cx + s_weight * sx + a_weight * ax)
+        vy += dt * (c_weight * cy + s_weight * sy + a_weight * ay)
 
-    return new_vx, new_vy
+        vx *= 0.99 # tips og tricks fra chatten --> 'prevents runaway acceleration'
+        vy *= 0.99
 
+        speed = np.sqrt(vx**2 + vy**2) # speed limiter
+        if speed > MAX_SPEED:
+            vx = (vx / speed) * MAX_SPEED
+            vy = (vy / speed) * MAX_SPEED
 
-# Make the environment toroidal
-def wrap(z):
-    return z % ARENA_SIDE_LENGTH
-
-
-def init():
-    points.set_data([], []) 
-    return (points,)
+        flock[i].update_velocity(vx, vy)
+        flock[i].update_position() # points.set_data(x, y)
 
 
-def animate(i):
-    global x, y, vx, vy
-    # x = np.array(list(map(wrap, x + vx)))
-    # y = np.array(list(map(wrap, y + vy)))
 
-    #Update step
-    vx, vy = update(vx, vy)
+def main():
+    img = np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255 # for at få en hvid baggrund
+    imgclear = np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255 # for at få en hvid baggrund
+    # (image, position, radius, color(BGR), thickness -1 = filled)
+    #cv2.circle(img, (250, 250), 5, (255, 50, 50), -1)  
 
+    blueColor = (255, 50, 50)
+    agentRadius = 5
+
+    x=np.random.randint(200,300, size=(NUMBER_OF_ROBOTS)) # todo: mangler at tjekke om de spawner oven i hinanden
+    y=np.random.randint(200,300, size=(NUMBER_OF_ROBOTS))
     
-    x = wrap(x + vx)
-    y = wrap(y + vy)
+    # Velocities
+    vx = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_ROBOTS,))
+    vy = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_ROBOTS,))
 
-    points.set_data(x, y)
-    print("Step ", i + 1, "/", STEPS, end="\r")
+    flock = [] # Make the flock
+    for i in range(NUMBER_OF_ROBOTS):
+        flock.append(Boids(i, x[i], y[i], vx[i], vy[i], HEIGHT, WIDTH))
 
-    return (points,)
+
+    hold = False  # Flag to control the hold state
+
+    while(True):
+        img = imgclear.copy() # to clear the image
+        
+        update_two(flock) 
+
+        for i in range(NUMBER_OF_ROBOTS):
+            xBoid, yBoid = flock[i].get_position()
+            cv2.circle(img, (int(xBoid), int(yBoid)), agentRadius, blueColor, -1)  # nu har vi tegnet direkte på vores frame, så kan vi tjekke farve i de omkring liggende pixels
 
 
-anim = FuncAnimation(fig, animate, init_func=init, frames=STEPS, interval=1, blit=True)
+        cv2.imshow("Window", img)
+        
+        if cv2.waitKey(1) == ord('q'):
+           break
+        
+        # Hvis man vil steppe through, evt med et print i en funktion så man kan nå at stoppe op og se hvad der står.
+        # key = cv2.waitKey(0)  
+        #
+        # if key == ord('q'):
+        #     break  
+        # elif key == ord('e'):
+        #     hold = not hold  
+        #     if not hold:
+        #         continue  
+        # elif hold:
+        #     continue 
 
-videowriter = animation.FFMpegWriter(fps=60)
-anim.save("output.mp4", writer=videowriter)
+
+
+
+    cv2.destroyAllWindows()
+
+
+############ Main
+main()
