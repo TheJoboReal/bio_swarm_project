@@ -24,8 +24,8 @@ class Boids:
         return np.array([self.vx,self.vy])
 
     def update_position(self):
-        self.x = (self.x + self.vx) % self.height  # Wrap around
-        self.y = (self.y + self.vy) % self.width
+        self.x = (self.x + self.vx) % self.width  # Wrap around
+        self.y = (self.y + self.vy) % self.height
         
         # self.x += self.vx
         # self.y += self.vy

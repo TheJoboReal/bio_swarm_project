@@ -1,29 +1,16 @@
 import numpy as np
-from matplotlib import pyplot as plt
-from matplotlib import animation
-from matplotlib.animation import FuncAnimation
 import cv2
 
 from agent import *
 
 ARENA_SIDE_LENGTH = 20
-NUMBER_OF_ROBOTS = 30
+NUMBER_OF_ROBOTS = 2 #30
 STEPS = 1200
 MAX_SPEED = 2
-
 
 # Window width and height
 HEIGHT = 700
 WIDTH = 700
-
-### Initiate random robots with random positions and velocities.
-# Positions
-# x = np.random.uniform(low=0, high=ARENA_SIDE_LENGTH, size=(NUMBER_OF_ROBOTS,))
-# y = np.random.uniform(low=0, high=ARENA_SIDE_LENGTH, size=(NUMBER_OF_ROBOTS,))
-#
-# # Velocities
-# vx = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_ROBOTS,))
-# vy = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_ROBOTS,))
 
 
 def distance_between_agents(boid_og, neighbor):
@@ -37,152 +24,76 @@ def distance_between_agents(boid_og, neighbor):
     return distance
 
 
-#################### COHESION ####################
-# kilde: https://keyirobot.com/blogs/buying-guide/exploring-swarm-robotics-programming-multiple-simple-agents
-# Kilde2: https://medium.com/better-programming/boids-simulating-birds-flock-behavior-in-python-9fff99375118
-def cohesion(
-    boid_og, flock, min_distanceThreshold_for_cohesion
-):  # tiltrækning til naboer
-    # For every robot/agent/boid (find et navn) we need to find the average x and y position of its neighbors
-    avg_x = 0
-    avg_y = 0
-    denominator_in_avg_calculation = 0.0
 
-    # Loop through the robots and find avg
-    for j in range(NUMBER_OF_ROBOTS):
-        if boid_og.get_id() != j:  # ensure different neighbor
-            neighbor = flock[j]
-            # Check that distnace to neighbor j is within threshold
-            distance = distance_between_agents(boid_og, neighbor)
-            if distance < min_distanceThreshold_for_cohesion:
-                x_nb, y_nb = neighbor.get_position()
-
-                avg_x += x_nb  # ligger nabos position til avg_x
-                avg_y += y_nb  # og for y også
-                denominator_in_avg_calculation += (
-                    1  # skal bruges til at dividere med for at få gennemsnit
-                )
-
-    # Find average by dividing by number of neigbors
-    if denominator_in_avg_calculation > 0:
-        x_og, y_og = boid_og.get_position()
-
-        avg_x = avg_x / denominator_in_avg_calculation
-        avg_y = avg_y / denominator_in_avg_calculation
-        return avg_x - x_og, avg_y - y_og
-
-    # Does nothing if no neighbor
-    return 0.0, 0.0
-
-
-#################### SEPARATION ####################
-# kilde: https://keyirobot.com/blogs/buying-guide/exploring-swarm-robotics-programming-multiple-simple-agents
-def separation(boid_og, flock, min_seperation_distance_threshold):
-    # Which direction the agents will move according to seperation
-    sx = 0.0
-    sy = 0.0
-
-    # Loop through nearby (given by threshold) neighbors
-    for j in range(NUMBER_OF_ROBOTS):
-        if boid_og.get_id() != j:  # ensure different neighbor
-            neighbor = flock[j]
-            # Check that distnace to neighbor j is within threshold
-            distance = distance_between_agents(boid_og, neighbor)
-            if distance < min_seperation_distance_threshold:
-                # Calc difference betweeen agent i and -j
-                x_og, y_og = boid_og.get_position()
-                x_nb, y_nb = neighbor.get_position()
-
-                dx = x_nb - x_og
-                dy = y_nb - y_og
-
-                sx -= dx  # minus ensures agent moves away from other agents -> repels neighbors
-                sy -= dy
-
-    return sx, sy
-
-
-
-#################### ALIGNMENT ####################
-# kilde: https://keyirobot.com/blogs/buying-guide/exploring-swarm-robotics-programming-multiple-simple-agents
-def alignment_Velocity_Based(boid_og, flock, min_alligment_distance_threshold):
-    # variables for avg speed
-    avg_vx = 0.0
-    avg_vy = 0.0
-    denominator_in_avg_calc = 0.0
-
-    #  Find average speed of neighbors
-    for j in range(NUMBER_OF_ROBOTS):
-        if boid_og.get_id() != j:  # ensure different neighbor
-            neighbor = flock[j]
-            # Check that distnace to neighbor j is within threshold
-            distance = distance_between_agents(boid_og, neighbor)
-            if distance < min_alligment_distance_threshold:
-                vx, vy = neighbor.get_velocity()
-                avg_vx += vx
-                avg_vy += vy
-                denominator_in_avg_calc += 1
-
-    # Find average by dividing by number of neigbors within given threshold
-    if denominator_in_avg_calc > 0:
-        avg_vx = avg_vx / denominator_in_avg_calc
-        avg_vy = avg_vy / denominator_in_avg_calc
-
-        # Fra kilde: Speed += allignment - current speed
-
-        vx, vy = boid_og.get_velocity()
-        allignment_output_vx = avg_vx - vx
-        allignment_output_vy = avg_vy - vy
-        return allignment_output_vx, allignment_output_vy
-
-    return 0.0, 0.0
-
-
-def cohesion_separation(boid_og, sensor_range, delta):
+def cohesion_separation(boid, flock, sensor_range, delta):
     # Get index of current boid
-    i = boid_og.get_id()
+    i = boid.get_id()
 
     # Count number of neighbors
     neighbor_count = 0
     for j in range(NUMBER_OF_ROBOTS):
         if i != j:
-            distance = distance_between_agents(i, j)
-            if distance < sensor_range:
-                neighbor_count += 1
+            distance = distance_between_agents(boid, flock[j])
+            print("cs n dist: ", distance)
+            if 0 < distance < sensor_range: # "0 <" to avoid dividing by zero later
+                neighbor_count += 1 #Count number of neighbors
 
-    # Calculate control input (/acceleration) for agent i
-    control_input = 0.0
+    # Calculate control input for boid i
+    control_input_x, control_input_y = 0.0, 0.0
     for j in range(NUMBER_OF_ROBOTS):
         if i != j:
-            cohesion_separation_gain = i - delta * neighbor_count / np.sqrt( boid_og.g )
-            control
+            distance = distance_between_agents(boid, flock[j])
+            print("cs ci dist: ", distance)
+            if 0 < distance < sensor_range:
 
-    return 0.0, 0.0
+                # Calculate cohesion-seperation gain:
+                cohesion_separation_gain = 1 - (delta * neighbor_count) / distance
 
-def update_two(flock):
+                # Then calculate cohesion_separation control input from cohesion_separation / attraction_repulsive-term
+                boid_pos_x, boid_pos_y = boid.get_position()
+                neighbor_pos_x, neighbor_pos_y = flock[j].get_position()
 
-    # weights for controlling cohesion, separation and allignment
-    c_weight = 0.01  # 0.01
-    s_weight = 0.05  # 0.05
-    a_weight = 0.03  # 0.03
+                control_input_x += cohesion_separation_gain * (neighbor_pos_x - boid_pos_x)
+                control_input_y += cohesion_separation_gain * (neighbor_pos_y - boid_pos_y)
 
-    dt = 0.1
+    return control_input_x, control_input_y
 
-    # Update each robot individually
+
+def alignment_velocity_based(boid, flock, sensor_range):
+    #Current boid id and velocity
+    i = boid.get_id()
+    boid_vel_x, boid_vel_y = boid.get_velocity()
+
+    #allignment variables
+    alignment_x, alignment_y = 0.0, 0.0
+    for j in range(NUMBER_OF_ROBOTS):
+        if i != j:
+            distance = distance_between_agents(boid, flock[j])
+            print("a dist: ", distance)
+            if 0 < distance < sensor_range: # "0 <" to avoid dividing by zero later
+                neighbor_vel_x, neighbor_vel_y = flock[j].get_velocity()
+                alignment_x += neighbor_vel_x - boid_vel_x
+                alignment_y += neighbor_vel_y - boid_vel_y
+    
+    return alignment_x, alignment_y
+
+
+def update(flock):
+
+    dt = 0.1 #???
+
+    # Update each boid individually
     for i in range(NUMBER_OF_ROBOTS):
         boid_og = flock[i]  # original
-        cx, cy = cohesion(boid_og, flock, 80)  # print(cx, cy)
-        sx, sy = separation(boid_og, flock, 15)
-        ax, ay = alignment_Velocity_Based(boid_og, flock, 50)
+        sensor_range = 60
+        cs_x, cs_y = cohesion_separation(boid_og, flock, sensor_range, delta=7.5)
+        ax, ay = alignment_velocity_based(boid_og, flock, sensor_range)
 
-        # Update speed
+        # Update speed for boid i
         vx, vy = boid_og.get_velocity()
 
-        vx += dt * (c_weight * cx + s_weight * sx + a_weight * ax)
-        vy += dt * (c_weight * cy + s_weight * sy + a_weight * ay)
-
-        vx *= 0.99  # tips og tricks fra chatten --> 'prevents runaway acceleration'
-        vy *= 0.99
+        vx += dt * (cs_x + ax)
+        vy += dt * (cs_y + ay)
 
         speed = np.sqrt(vx**2 + vy**2)  # speed limiter
         if speed > MAX_SPEED:
@@ -192,19 +103,21 @@ def update_two(flock):
         flock[i].update_velocity(vx, vy)
         flock[i].update_position()  # points.set_data(x, y)
 
+    p1x, p1y = flock[0].get_position()
+    p2x, p2y = flock[1].get_position()
+    print("\npos1: ", round(p1x,2), " ", round(p1y,2))
+    print("pos2: ", round(p2x,2), " ", round(p2y,2))
+    print("dist: ", round(distance_between_agents(flock[0], flock[1]),2))
+
 
 def main():
-    img = (
-        np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255
-    )  # for at få en hvid baggrund
-    imgclear = (
-        np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255
-    )  # for at få en hvid baggrund
+    img = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255)  # for at få en hvid baggrund
+    imgclear = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255)  # for at få en hvid baggrund
     # (image, position, radius, color(BGR), thickness -1 = filled)
     # cv2.circle(img, (250, 250), 5, (255, 50, 50), -1)
 
     blueColor = (255, 50, 50)
-    agentRadius = 5
+    agentRadius = 3
 
     x = np.random.randint(
         200, 300, size=(NUMBER_OF_ROBOTS)
@@ -224,15 +137,17 @@ def main():
     while True:
         img = imgclear.copy()  # to clear the image
 
-        update_two(flock)
+        update(flock)
 
         for i in range(NUMBER_OF_ROBOTS):
             xBoid, yBoid = flock[i].get_position()
-            cv2.circle(
-                img, (int(xBoid), int(yBoid)), agentRadius, blueColor, -1
-            )  # nu har vi tegnet direkte på vores frame, så kan vi tjekke farve i de omkring liggende pixels
+            cv2.circle(img, (int(xBoid), int(yBoid)), agentRadius, blueColor, -1)
 
         cv2.imshow("Window", img)
+
+        while(1):
+            if cv2.waitKey(1) == ord("h"):
+                break
 
         if cv2.waitKey(1) == ord("q"):
             break
