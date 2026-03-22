@@ -1,10 +1,9 @@
 import numpy as np
 import cv2
-
 from agent import *
 
 ARENA_SIDE_LENGTH = 20
-NUMBER_OF_ROBOTS = 2 #30
+NUMBER_OF_ROBOTS = 30
 STEPS = 1200
 MAX_SPEED = 2
 
@@ -19,6 +18,7 @@ def distance_between_agents(boid_og, neighbor):
 
     dist_x = x_nb - x_og
     dist_y = y_nb - y_og
+
     distance = np.sqrt(dist_x**2 + dist_y**2)
     # print("distance ", distance)
     return distance
@@ -34,7 +34,6 @@ def cohesion_separation(boid, flock, sensor_range, delta):
     for j in range(NUMBER_OF_ROBOTS):
         if i != j:
             distance = distance_between_agents(boid, flock[j])
-            print("cs n dist: ", distance)
             if 0 < distance < sensor_range: # "0 <" to avoid dividing by zero later
                 neighbor_count += 1 #Count number of neighbors
 
@@ -43,7 +42,6 @@ def cohesion_separation(boid, flock, sensor_range, delta):
     for j in range(NUMBER_OF_ROBOTS):
         if i != j:
             distance = distance_between_agents(boid, flock[j])
-            print("cs ci dist: ", distance)
             if 0 < distance < sensor_range:
 
                 # Calculate cohesion-seperation gain:
@@ -69,7 +67,6 @@ def alignment_velocity_based(boid, flock, sensor_range):
     for j in range(NUMBER_OF_ROBOTS):
         if i != j:
             distance = distance_between_agents(boid, flock[j])
-            print("a dist: ", distance)
             if 0 < distance < sensor_range: # "0 <" to avoid dividing by zero later
                 neighbor_vel_x, neighbor_vel_y = flock[j].get_velocity()
                 alignment_x += neighbor_vel_x - boid_vel_x
@@ -103,11 +100,11 @@ def update(flock):
         flock[i].update_velocity(vx, vy)
         flock[i].update_position()  # points.set_data(x, y)
 
-    p1x, p1y = flock[0].get_position()
-    p2x, p2y = flock[1].get_position()
-    print("\npos1: ", round(p1x,2), " ", round(p1y,2))
-    print("pos2: ", round(p2x,2), " ", round(p2y,2))
-    print("dist: ", round(distance_between_agents(flock[0], flock[1]),2))
+    # p1x, p1y = flock[0].get_position()
+    # p2x, p2y = flock[1].get_position()
+    # print("\npos1: ", round(p1x,2), " ", round(p1y,2))
+    # print("pos2: ", round(p2x,2), " ", round(p2y,2))
+    # print("dist: ", round(distance_between_agents(flock[0], flock[1]),2))
 
 
 def main():
@@ -132,7 +129,7 @@ def main():
     for i in range(NUMBER_OF_ROBOTS):
         flock.append(Boids(i, x[i], y[i], vx[i], vy[i], HEIGHT, WIDTH))
 
-    hold = False  # Flag to control the hold state
+    # hold = False  # Flag to control the hold state
 
     while True:
         img = imgclear.copy()  # to clear the image
@@ -144,10 +141,6 @@ def main():
             cv2.circle(img, (int(xBoid), int(yBoid)), agentRadius, blueColor, -1)
 
         cv2.imshow("Window", img)
-
-        while(1):
-            if cv2.waitKey(1) == ord("h"):
-                break
 
         if cv2.waitKey(1) == ord("q"):
             break
