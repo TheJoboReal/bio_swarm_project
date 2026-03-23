@@ -4,26 +4,16 @@ from matplotlib import animation
 from matplotlib.animation import FuncAnimation
 
 ARENA_SIDE_LENGTH = 20
-NUMBER_OF_AGENTS = 30
-STEPS = 1200
+NUMBER_OF_AGENTS = None
 MAX_SPEED = 0.1
+STEPS = 1200
+VEL_MODE = 0
+POS_MODE = 1
+
 COHESION_THRESHOLD = 2
 SEPERATION_THRESHOLD = 1.25
 MIN_ALLIGNMENT_DISTANCE_THRESHOLD = 1.25
 
-
-### Initiate random robots with random positions and velocities.
-# Positions
-x = np.random.uniform(low=0, high=ARENA_SIDE_LENGTH, size=(NUMBER_OF_AGENTS,))
-y = np.random.uniform(low=0, high=ARENA_SIDE_LENGTH, size=(NUMBER_OF_AGENTS,))
-
-# Initial Positions
-x0 = x
-y0 = y
-
-# Velocities
-vx = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_AGENTS,))
-vy = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_AGENTS,))
 
 # Set up the output (1024 x 768):
 fig = plt.figure(figsize=(10.24, 10.24), dpi=100)
@@ -34,6 +24,19 @@ ax = plt.axes(xlim=(0, ARENA_SIDE_LENGTH), ylim=(0, ARENA_SIDE_LENGTH))
     "bo",
     lw=0,
 )
+
+
+def init_agents():
+    global x, y, vx, vy, x0, y0
+
+    x = np.random.uniform(0, ARENA_SIDE_LENGTH, NUMBER_OF_AGENTS)
+    y = np.random.uniform(0, ARENA_SIDE_LENGTH, NUMBER_OF_AGENTS)
+
+    x0 = np.copy(x)
+    y0 = np.copy(y)
+
+    vx = np.random.uniform(-MAX_SPEED, MAX_SPEED, NUMBER_OF_AGENTS)
+    vy = np.random.uniform(-MAX_SPEED, MAX_SPEED, NUMBER_OF_AGENTS)
 
 
 def enforce_max_speed_limit(vx_agent, vy_agent):
@@ -208,6 +211,25 @@ def wrap(z):
     return z % ARENA_SIDE_LENGTH
 
 
+def init_terminal_input():
+    global COHESION_THRESHOLD, SEPERATION_THRESHOLD
+    global MIN_ALLIGNMENT_DISTANCE_THRESHOLD, NUMBER_OF_AGENTS
+
+    try:
+        NUMBER_OF_AGENTS = int(input("Enter number of agents (default 30): ") or 30)
+
+        COHESION_THRESHOLD = float(input("Enter cohesion threshold (default 2): ") or 2)
+        SEPERATION_THRESHOLD = float(
+            input("Enter separation threshold (default 1.25): ") or 1.25
+        )
+        MIN_ALLIGNMENT_DISTANCE_THRESHOLD = float(
+            input("Enter alignment distance threshold (default 1.25): ") or 1.25
+        )
+    except ValueError:
+        print("Invalid input. Using default values.")
+        NUMBER_OF_AGENTS = 30
+
+
 def init():
     points.set_data([], [])
     return (points,)
@@ -230,6 +252,8 @@ def animate(i):
     return (points,)
 
 
+init_terminal_input()
+init_agents()
 anim = FuncAnimation(fig, animate, init_func=init, frames=STEPS, interval=1, blit=True)
 
 videowriter = animation.FFMpegWriter(fps=60)
