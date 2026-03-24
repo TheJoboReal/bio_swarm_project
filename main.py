@@ -1,16 +1,30 @@
 import numpy as np
 import math
+import argparse
 import matplotlib.pyplot as plt
 import cv2
 from agent import *
 
-NUMBER_OF_AGENTS = 30
-STEPS = 100
-MAX_SPEED = 2
+DEFAULT_NUMBER_OF_AGENTS = 30
+DEFAULT_STEPS = 100
+DEFAULT_MAX_SPEED = 2
+
+DEFAULT_EPOCHS = 1
 
 # Window width and height
-HEIGHT = 700
-WIDTH = 700
+DEFAULT_HEIGHT = 700
+DEFAULT_WIDTH = 700
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Boids Simulation")
+    parser.add_argument("--agents", type=int, default=DEFAULT_NUMBER_OF_AGENTS, help="Number of agents in the simulation")
+    parser.add_argument("--steps", type=int, default=DEFAULT_STEPS, help="Number of simulation steps")
+    parser.add_argument("--max_speed", type=float, default=DEFAULT_MAX_SPEED, help="Maximum speed of agents")
+    parser.add_argument("--epochs", type=int, default=DEFAULT_EPOCHS, help="Number of epochs")
+    parser.add_argument("--height", type=int, default=DEFAULT_HEIGHT, help="Window height")
+    parser.add_argument("--width", type=int, default=DEFAULT_WIDTH, help="Window width")
+    return parser.parse_args()
 
 
 # Calculate the gamma [-1,1] value that represents the drectional alignment. If gamma is approx 1, it indicates near-parallel velocities (strong alignment) and values near or below 0 indicat-ing misalignment. By normalizing direction, this metric isolates directional consensus from speed differences
@@ -65,7 +79,7 @@ def cohesion_separation(boid, flock, sensor_range, delta):
 
     # Count number of neighbors
     neighbor_count = 0
-    for j in range(NUMBER_OF_AGENTS):
+    for j in range(len(flock)):
         if i != j:
             distance = distance_between_agents(boid, flock[j])
             if 0 < distance < sensor_range:  # "0 <" to avoid dividing by zero later
@@ -73,7 +87,7 @@ def cohesion_separation(boid, flock, sensor_range, delta):
 
     # Calculate control input for boid i
     control_input_x, control_input_y = 0.0, 0.0
-    for j in range(NUMBER_OF_AGENTS):
+    for j in range(len(flock)):
         if i != j:
             distance = distance_between_agents(boid, flock[j])
             if 0 < distance < sensor_range:
@@ -102,7 +116,7 @@ def alignment_velocity_based(boid, flock, sensor_range):
 
     # allignment variables
     alignment_x, alignment_y = 0.0, 0.0
-    for j in range(NUMBER_OF_AGENTS):
+    for j in range(len(flock)):
         if i != j:
             distance = distance_between_agents(boid, flock[j])
             if 0 < distance < sensor_range:  # "0 <" to avoid dividing by zero later
@@ -121,7 +135,7 @@ def alignment_position_based(boid, flock, sensor_range, t):
     sum_dy = 0.0
     neighbor_count = 0
 
-    for j in range(NUMBER_OF_AGENTS):
+    for j in range(len(flock)):
         if j != i:
             distance = distance_between_agents(boid, flock[j])
 
@@ -153,7 +167,7 @@ def alignment_position_based(boid, flock, sensor_range, t):
 
         # print(alignment_output_vx, " " , alignment_output_vy)
 
-        print(t)
+        #print(t)
 
         return alignment_output_vx, alignment_output_vy
     elif neighbor_count > 0 and t < 10:
@@ -170,12 +184,12 @@ def alignment_position_based(boid, flock, sensor_range, t):
 dt = 0.1  # ???
 
 
-def update(flock, t, gamma_t):
+def update(flock, t, gamma_t, MAX_SPEED):
 
     t += dt
 
     # Update each boid individually
-    for i in range(NUMBER_OF_AGENTS):
+    for i in range(len(flock)):
         boid_og = flock[i]  # original
         sensor_range = 60
         cs_x, cs_y = cohesion_separation(boid_og, flock, sensor_range, delta=7.5)
@@ -205,24 +219,31 @@ def update(flock, t, gamma_t):
     gamma_value = gamma_sum / len(flock)
     gamma_t.append(gamma_value)
 
-    print(t)
-    print(gamma_value)
+    #print(t)
+    #print(gamma_value)
 
 
 def main():
-    img = (
-        np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255
-    )  # for at få en hvid baggrund
-    imgclear = (
-        np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255
-    )  # for at få en hvid baggrund
+    args = parse_args()
+
+    NUMBER_OF_AGENTS = args.agents
+    STEPS = args.steps
+    MAX_SPEED = args.max_speed
+    HEIGHT = args.height
+    WIDTH = args.width
+
+    EPOCHS = args.epochs
+
+
+    img = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255 )  # for at få en hvid baggrund
+    imgclear = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255)  # for at få en hvid baggrund
 
     blueColor = (255, 50, 50)
-    agentRadius = 3
+    agentRadius = 3 # for drawing
 
     # Generate random positions
-    x = np.random.randint(200, 300, size=(NUMBER_OF_AGENTS))
-    y = np.random.randint(200, 300, size=(NUMBER_OF_AGENTS))
+    x = np.random.uniform(0, HEIGHT, size=(NUMBER_OF_AGENTS))
+    y = np.random.uniform(0, WIDTH, size=(NUMBER_OF_AGENTS))
 
     # Generate random velocities
     vx = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_AGENTS,))
@@ -233,44 +254,35 @@ def main():
     for i in range(NUMBER_OF_AGENTS):
         flock.append(Boids(i, x[i], y[i], vx[i], vy[i], HEIGHT, WIDTH))
 
-    # hold = False  # Flag to control the hold state
     # gamma_t directional alignment values over time.
     gamma_t = []
 
-    # Time passed
-    T = 0.1
 
     # Do the simulation
-    while True:
-        img = imgclear.copy()  # to clear the image
+    for epoch in range(EPOCHS):
+        # Time passed
+        T = 0.1
 
-        update(flock, T, gamma_t)
+        while (T < DEFAULT_STEPS):
+            print(T)
+            img = imgclear.copy()  # to clear the image
 
-        for i in range(NUMBER_OF_AGENTS):
-            xBoid, yBoid = flock[i].get_position()
-            cv2.circle(img, (int(xBoid), int(yBoid)), agentRadius, blueColor, -1)
+            update(flock, T, gamma_t, MAX_SPEED)
 
-        cv2.imshow("Window", img)
+            for i in range(NUMBER_OF_AGENTS):
+                xBoid, yBoid = flock[i].get_position()
+                cv2.circle(img, (int(xBoid), int(yBoid)), agentRadius, blueColor, -1)
 
-        if cv2.waitKey(1) == ord("q"):
-            break
+            cv2.imshow("Window", img)
 
-        # Hvis man vil steppe through, evt med et print i en funktion så man kan nå at stoppe op og se hvad der står.
-        # key = cv2.waitKey(0)
-        #
-        # if key == ord('q'):
-        #     break
-        # elif key == ord('e'):
-        #     hold = not hold
-        #     if not hold:
-        #         continue
-        # elif hold:
-        #     continue
+            if cv2.waitKey(1) == ord("q"):
+                break
 
-    cv2.destroyAllWindows()
 
-    plt.plot(gamma_t)
-    plt.savefig("gamma_t_plot.png")
+        cv2.destroyAllWindows()
+
+        plt.plot(gamma_t)
+        plt.savefig("gamma_t_plot.png")
 
 
 ############ Main
