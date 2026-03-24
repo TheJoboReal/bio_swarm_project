@@ -86,7 +86,7 @@ def alignment_Position_Based(boid, flock, min_alignment_distance_threshold, t):
 
     i = boid.get_id()
 
-    for j in range(NUMBER_OF_ROBOTS):
+    for j in range(NUMBER_OF_AGENTS):
         if j != i:
             distance = distance_between_agents(boid, flock[j])
 
@@ -99,8 +99,9 @@ def alignment_Position_Based(boid, flock, min_alignment_distance_threshold, t):
                 rel_y_now = neighbor_pos_y - boid_pos_y
 
 
-                boid_pos_x_init, boid_pos_y_init = boid.get_init_position()
-                neighbor_pos_y_init, neighbor_pos_y_init = flock[j].get_init_position()
+                boid_pos_x_init, boid_pos_y_init = boid.get_initial_position()
+                neighbor_pos_y_init, neighbor_pos_y_init = flock[j].get_initial_position()
+                
                 # Initial relative position
                 rel_x_0 = neighbor_pos_y_init - boid_pos_x_init
                 rel_y_0 = neighbor_pos_y_init - boid_pos_y_init
@@ -151,7 +152,7 @@ def update(flock, t):
         sensor_range = 60
         cs_x, cs_y = cohesion_separation(boid_og, flock, sensor_range, delta=7.5)
         #ax, ay = alignment_velocity_based(boid_og, flock, sensor_range)
-        ax, ay  = alignment_Position_Based(boid_og, flock, sensor_range, t)
+        ax_pos_based, ay_pos_based  = alignment_Position_Based(boid_og, flock, sensor_range, t)
         # Update speed for boid i
         vx, vy = boid_og.get_velocity()
         vx += dt * (cs_x + ax_pos_based)
