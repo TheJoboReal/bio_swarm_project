@@ -3,7 +3,7 @@ import cv2
 from agent import *
 
 ARENA_SIDE_LENGTH = 20
-NUMBER_OF_ROBOTS = 30
+NUMBER_OF_AGENTS = 30
 STEPS = 1200
 MAX_SPEED = 2
 
@@ -31,7 +31,7 @@ def cohesion_separation(boid, flock, sensor_range, delta):
 
     # Count number of neighbors
     neighbor_count = 0
-    for j in range(NUMBER_OF_ROBOTS):
+    for j in range(NUMBER_OF_AGENTS):
         if i != j:
             distance = distance_between_agents(boid, flock[j])
             if 0 < distance < sensor_range: # "0 <" to avoid dividing by zero later
@@ -39,7 +39,7 @@ def cohesion_separation(boid, flock, sensor_range, delta):
 
     # Calculate control input for boid i
     control_input_x, control_input_y = 0.0, 0.0
-    for j in range(NUMBER_OF_ROBOTS):
+    for j in range(NUMBER_OF_AGENTS):
         if i != j:
             distance = distance_between_agents(boid, flock[j])
             if 0 < distance < sensor_range:
@@ -60,85 +60,123 @@ def cohesion_separation(boid, flock, sensor_range, delta):
 def alignment_velocity_based(boid, flock, sensor_range):
     #Current boid id and velocity
     i = boid.get_id()
-    boid_vel_x, boid_vel_y = boid.get_velocity()
+    boid_vx, boid_vy = boid.get_velocity()
 
     #allignment variables
     alignment_x, alignment_y = 0.0, 0.0
-    for j in range(NUMBER_OF_ROBOTS):
+    for j in range(NUMBER_OF_AGENTS):
         if i != j:
             distance = distance_between_agents(boid, flock[j])
             if 0 < distance < sensor_range: # "0 <" to avoid dividing by zero later
                 neighbor_vel_x, neighbor_vel_y = flock[j].get_velocity()
-                alignment_x += neighbor_vel_x - boid_vel_x
-                alignment_y += neighbor_vel_y - boid_vel_y
+                alignment_x += neighbor_vel_x - boid_vx
+                alignment_y += neighbor_vel_y - boid_vy
     
     return alignment_x, alignment_y
 
 
-def update(flock):
+def alignment_position_based(boid, flock, sensor_range, T):
+    #Current boid's id
+    i = boid.get_id()
+    #Current boid's initial position
+    boid_i_initial_x, boid_i_initial_y = boid.get_initial_position()
 
-    dt = 0.1 #???
+    #allignment variables
+    sum_dx, sum_dy = 0.0, 0.0
+    for j in range(NUMBER_OF_AGENTS):
+        if j != i:
+            distance = distance_between_agents(boid, flock[j])
+            if 0 < distance < sensor_range: 
+                #Boid_i's current position
+                boid_i_x, boid_i_y = boid.get_position()
+                #Neighbors j's current position
+                neighbor_j_x, neighbor_j_y = flock[j].get_position()
+                # Last relative position
+                rel_x_now = neighbor_j_x - boid_i_x
+                rel_y_now = neighbor_j_y - boid_i_y
+
+                # Neighbor boid's initial position
+                neighbor_j_initial_x, neighbor_j_initial_y = flock[j].get_initial_position()
+                # Initial relative position
+                rel_x_0 = neighbor_j_initial_x - boid_i_initial_x
+                rel_y_0 = neighbor_j_initial_y - boid_i_initial_y
+
+                # Sum of changes
+                sum_dx += rel_x_now - rel_x_0
+                sum_dy += rel_y_now - rel_y_0
+
+
+    alignment_x = sum_dx / T
+    alignment_y = sum_dy / T
+    return alignment_x, alignment_y
+
+
+def update(flock, T):
+
+    #Time steps
+    dt = 0.1
 
     # Update each boid individually
-    for i in range(NUMBER_OF_ROBOTS):
+    for i in range(NUMBER_OF_AGENTS):
         boid_og = flock[i]  # original
         sensor_range = 60
         cs_x, cs_y = cohesion_separation(boid_og, flock, sensor_range, delta=7.5)
-        ax, ay = alignment_velocity_based(boid_og, flock, sensor_range)
+        ax_vel_based, ay_vel_based = alignment_velocity_based(boid_og, flock, sensor_range)
+        ax_pos_based, ay_pos_based = alignment_position_based(boid_og, flock, sensor_range, T)
 
         # Update speed for boid i
         vx, vy = boid_og.get_velocity()
+        vx += dt * (cs_x + ax_pos_based)
+        vy += dt * (cs_y + ay_pos_based)
 
-        vx += dt * (cs_x + ax)
-        vy += dt * (cs_y + ay)
-
-        speed = np.sqrt(vx**2 + vy**2)  # speed limiter
+        # speed limiter
+        speed = np.sqrt(vx**2 + vy**2)  
         if speed > MAX_SPEED:
             vx = (vx / speed) * MAX_SPEED
             vy = (vy / speed) * MAX_SPEED
 
+        #Execute update for boid i
         flock[i].update_velocity(vx, vy)
         flock[i].update_position()  # points.set_data(x, y)
 
-    # p1x, p1y = flock[0].get_position()
-    # p2x, p2y = flock[1].get_position()
-    # print("\npos1: ", round(p1x,2), " ", round(p1y,2))
-    # print("pos2: ", round(p2x,2), " ", round(p2y,2))
-    # print("dist: ", round(distance_between_agents(flock[0], flock[1]),2))
+    print(T)
 
 
 def main():
     img = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255)  # for at få en hvid baggrund
     imgclear = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255)  # for at få en hvid baggrund
-    # (image, position, radius, color(BGR), thickness -1 = filled)
-    # cv2.circle(img, (250, 250), 5, (255, 50, 50), -1)
 
     blueColor = (255, 50, 50)
     agentRadius = 3
 
     x = np.random.randint(
-        200, 300, size=(NUMBER_OF_ROBOTS)
+        200, 300, size=(NUMBER_OF_AGENTS)
     )  # todo: mangler at tjekke om de spawner oven i hinanden
-    y = np.random.randint(200, 300, size=(NUMBER_OF_ROBOTS))
+    y = np.random.randint(200, 300, size=(NUMBER_OF_AGENTS))
 
     # Velocities
-    vx = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_ROBOTS,))
-    vy = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_ROBOTS,))
+    vx = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_AGENTS,))
+    vy = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_AGENTS,))
 
     flock = []  # Make the flock
-    for i in range(NUMBER_OF_ROBOTS):
+    for i in range(NUMBER_OF_AGENTS):
         flock.append(Boids(i, x[i], y[i], vx[i], vy[i], HEIGHT, WIDTH))
 
     # hold = False  # Flag to control the hold state
 
+    #Time passed
+    T = 0.1
+
     while True:
         img = imgclear.copy()  # to clear the image
 
-        update(flock)
+        update(flock, T)
 
-        for i in range(NUMBER_OF_ROBOTS):
+        for i in range(NUMBER_OF_AGENTS):
             xBoid, yBoid = flock[i].get_position()
             cv2.circle(img, (int(xBoid), int(yBoid)), agentRadius, blueColor, -1)
+
+        T += 0.1
 
         cv2.imshow("Window", img)
 
