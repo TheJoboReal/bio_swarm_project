@@ -273,12 +273,8 @@ def control_input_position_based_with_threshold(boid, flock, sensor_range, delta
 dt = 0.1  # ???
 
 
+
 def update(flock, t, gamma_t):
-
-
-
-
-def update(flock, t):
     
     #Update time step
     dt = 0.1
