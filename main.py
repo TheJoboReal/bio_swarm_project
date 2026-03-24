@@ -15,7 +15,7 @@ WIDTH = 700
 
 
 # Calculate the gamma [-1,1] value that represents the drectional alignment. If gamma is approx 1, it indicates near-parallel velocities (strong alignment) and values near or below 0 indicat-ing misalignment. By normalizing direction, this metric isolates directional consensus from speed differences
-def directional_alignment(boid, flock, neighbor):
+def directional_alignment_metric(boid, flock, neighbor):
     vx_i, vy_i = boid.get_velocity()
     norm_vi = math.sqrt(vx_i**2 + vy_i**2)
 
@@ -309,7 +309,7 @@ def update(flock, t, gamma_t):
     gamma_sum = 0.0
     for i in range(len(flock)):
         boid_i = flock[i]
-        gamma_sum += directional_alignment(boid_i, flock, neighbor=range(len(flock)))
+        gamma_sum += directional_alignment_metric(boid_i, flock, neighbor=range(len(flock)))
 
     gamma_value = gamma_sum / len(flock)
     gamma_t.append(gamma_value)
