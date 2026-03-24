@@ -8,6 +8,8 @@ class Boids:
         self.id = id 
         self.x = x
         self.y = y
+        self.x_initial = x
+        self.y_initial = y
         self.vx = vx
         self.vy = vy
         self.height = height
@@ -16,6 +18,9 @@ class Boids:
 
     def get_position(self):
         return np.array([self.x,self.y])
+    
+    def get_initial_position(self):
+        return np.array([self.x_initial, self.y_initial])
    
     def get_id(self):
         return self.id
