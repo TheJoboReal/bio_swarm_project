@@ -53,7 +53,8 @@ def cohesion_separation(boid, flock, sensor_range, delta):
 
                 control_input_x += cohesion_separation_gain * (neighbor_pos_x - boid_pos_x)
                 control_input_y += cohesion_separation_gain * (neighbor_pos_y - boid_pos_y)
-
+    #print(control_input_x, " ", control_input_y)
+    
     return control_input_x, control_input_y
 
 
@@ -75,55 +76,82 @@ def alignment_velocity_based(boid, flock, sensor_range):
     return alignment_x, alignment_y
 
 
-def alignment_position_based(boid, flock, sensor_range, T):
-    #Current boid's id
-    i = boid.get_id()
-    #Current boid's initial position
-    boid_i_initial_x, boid_i_initial_y = boid.get_initial_position()
 
-    #allignment variables
-    sum_dx, sum_dy = 0.0, 0.0
-    for j in range(NUMBER_OF_AGENTS):
+
+#jdef alignment_velocity_based(boid, flock, sensor_range):
+def alignment_Position_Based(boid, flock, min_alignment_distance_threshold, t):
+    sum_dx = 0.0
+    sum_dy = 0.0
+    neighbor_count = 0
+
+    i = boid.get_id()
+
+    for j in range(NUMBER_OF_ROBOTS):
         if j != i:
             distance = distance_between_agents(boid, flock[j])
-            if 0 < distance < sensor_range: 
-                #Boid_i's current position
-                boid_i_x, boid_i_y = boid.get_position()
-                #Neighbors j's current position
-                neighbor_j_x, neighbor_j_y = flock[j].get_position()
+
+            if distance < min_alignment_distance_threshold:
+                boid_pos_x, boid_pos_y = boid.get_position()
+                neighbor_pos_x, neighbor_pos_y = flock[j].get_position()
+
                 # Last relative position
-                rel_x_now = neighbor_j_x - boid_i_x
-                rel_y_now = neighbor_j_y - boid_i_y
+                rel_x_now = neighbor_pos_x - boid_pos_x
+                rel_y_now = neighbor_pos_y - boid_pos_y
 
-                # Neighbor boid's initial position
-                neighbor_j_initial_x, neighbor_j_initial_y = flock[j].get_initial_position()
+
+                boid_pos_x_init, boid_pos_y_init = boid.get_init_position()
+                neighbor_pos_y_init, neighbor_pos_y_init = flock[j].get_init_position()
                 # Initial relative position
-                rel_x_0 = neighbor_j_initial_x - boid_i_initial_x
-                rel_y_0 = neighbor_j_initial_y - boid_i_initial_y
+                rel_x_0 = neighbor_pos_y_init - boid_pos_x_init
+                rel_y_0 = neighbor_pos_y_init - boid_pos_y_init
 
-                # Sum of changes
+                # sum of changes
                 sum_dx += rel_x_now - rel_x_0
                 sum_dy += rel_y_now - rel_y_0
 
+                neighbor_count += 1
 
-    alignment_x = sum_dx / T
-    alignment_y = sum_dy / T
-    return alignment_x, alignment_y
+    if neighbor_count > 0 and t > 0:
+
+        # Approx relative velocity by the long-term change in relative position
+        alignment_output_vx = sum_dx / t
+        alignment_output_vy = sum_dy / t
+
+        #print(alignment_output_vx, " " , alignment_output_vy)
+
+        print(t)
+
+        return alignment_output_vx, alignment_output_vy
+    elif neighbor_count > 0 and t < 10:
+        k = 10
+        alignment_output_vx = sum_dx / k
+        alignment_output_vy = sum_dy / k
+
+        #print(alignment_output_vx, " " , alignment_output_vy)
+        return alignment_output_vx, alignment_output_vy
+        
+
+    return 0.0, 0.0
 
 
-def update(flock, T):
 
-    #Time steps
-    dt = 0.1
+
+
+
+
+dt = 0.1 #???
+
+def update(flock, t):
+    
+    t += dt 
 
     # Update each boid individually
     for i in range(NUMBER_OF_AGENTS):
         boid_og = flock[i]  # original
         sensor_range = 60
         cs_x, cs_y = cohesion_separation(boid_og, flock, sensor_range, delta=7.5)
-        ax_vel_based, ay_vel_based = alignment_velocity_based(boid_og, flock, sensor_range)
-        ax_pos_based, ay_pos_based = alignment_position_based(boid_og, flock, sensor_range, T)
-
+        #ax, ay = alignment_velocity_based(boid_og, flock, sensor_range)
+        ax, ay  = alignment_Position_Based(boid_og, flock, sensor_range, t)
         # Update speed for boid i
         vx, vy = boid_og.get_velocity()
         vx += dt * (cs_x + ax_pos_based)
@@ -139,8 +167,12 @@ def update(flock, T):
         flock[i].update_velocity(vx, vy)
         flock[i].update_position()  # points.set_data(x, y)
 
-    print(T)
-
+    # p1x, p1y = flock[0].get_position()
+    # p2x, p2y = flock[1].get_position()
+    # print("\npos1: ", round(p1x,2), " ", round(p1y,2))
+    # print("pos2: ", round(p2x,2), " ", round(p2y,2))
+    # print("dist: ", round(distance_between_agents(flock[0], flock[1]),2))
+    return t
 
 def main():
     img = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255)  # for at få en hvid baggrund
@@ -163,6 +195,7 @@ def main():
         flock.append(Boids(i, x[i], y[i], vx[i], vy[i], HEIGHT, WIDTH))
 
     # hold = False  # Flag to control the hold state
+    timeIterator = 0
 
     #Time passed
     T = 0.1
@@ -170,7 +203,7 @@ def main():
     while True:
         img = imgclear.copy()  # to clear the image
 
-        update(flock, T)
+        timeIterator += update(flock, timeIterator)
 
         for i in range(NUMBER_OF_AGENTS):
             xBoid, yBoid = flock[i].get_position()

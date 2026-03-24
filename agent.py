@@ -6,6 +6,8 @@ class Boids:
     #def __init__(self, id, x, y, vx, vy):
     def __init__(self, id, x, y, vx, vy, height, width):
         self.id = id 
+        self.xInit = x
+        self.yInit = y
         self.x = x
         self.y = y
         self.x_initial = x
