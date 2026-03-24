@@ -305,6 +305,7 @@ def update(flock, t, gamma_t):
         flock[i].update_velocity(vx, vy)
         flock[i].update_position()  # points.set_data(x, y)
 
+    # Metric
     gamma_sum = 0.0
     for i in range(len(flock)):
         boid_i = flock[i]
@@ -318,12 +319,9 @@ def update(flock, t, gamma_t):
 
 
 def main():
-    img = (
-        np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255
-    )  # for at få en hvid baggrund
-    imgclear = (
-        np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255
-    )  # for at få en hvid baggrund
+    # White background
+    img = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255)
+    imgclear = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255) 
 
     blueColor = (255, 50, 50)
     agentRadius = 2
