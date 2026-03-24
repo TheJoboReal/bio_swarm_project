@@ -2,9 +2,8 @@ import numpy as np
 import cv2
 from agent import *
 
-ARENA_SIDE_LENGTH = 20
 NUMBER_OF_AGENTS = 30
-STEPS = 1200
+STEPS = 100
 MAX_SPEED = 2
 
 # Window width and height
@@ -78,32 +77,32 @@ def alignment_velocity_based(boid, flock, sensor_range):
 
 
 
-#jdef alignment_velocity_based(boid, flock, sensor_range):
-def alignment_Position_Based(boid, flock, min_alignment_distance_threshold, t):
+def alignment_position_based(boid, flock, sensor_range, t):
+    #Current boid id
+    i = boid.get_id()
+
+
     sum_dx = 0.0
     sum_dy = 0.0
     neighbor_count = 0
-
-    i = boid.get_id()
 
     for j in range(NUMBER_OF_AGENTS):
         if j != i:
             distance = distance_between_agents(boid, flock[j])
 
-            if distance < min_alignment_distance_threshold:
+            if distance < sensor_range:
+                # Get current positions
                 boid_pos_x, boid_pos_y = boid.get_position()
                 neighbor_pos_x, neighbor_pos_y = flock[j].get_position()
-
                 # Last relative position
                 rel_x_now = neighbor_pos_x - boid_pos_x
                 rel_y_now = neighbor_pos_y - boid_pos_y
 
-
+                #Get initial positions
                 boid_pos_x_init, boid_pos_y_init = boid.get_initial_position()
-                neighbor_pos_y_init, neighbor_pos_y_init = flock[j].get_initial_position()
-                
+                neighbor_pos_x_init, neighbor_pos_y_init = flock[j].get_initial_position()
                 # Initial relative position
-                rel_x_0 = neighbor_pos_y_init - boid_pos_x_init
+                rel_x_0 = neighbor_pos_x_init - boid_pos_x_init
                 rel_y_0 = neighbor_pos_y_init - boid_pos_y_init
 
                 # sum of changes
@@ -151,8 +150,9 @@ def update(flock, t):
         boid_og = flock[i]  # original
         sensor_range = 60
         cs_x, cs_y = cohesion_separation(boid_og, flock, sensor_range, delta=7.5)
-        #ax, ay = alignment_velocity_based(boid_og, flock, sensor_range)
-        ax_pos_based, ay_pos_based  = alignment_Position_Based(boid_og, flock, sensor_range, t)
+        #ax_vel_based, ay_vel_based = alignment_velocity_based(boid_og, flock, sensor_range)
+        ax_pos_based, ay_pos_based  = alignment_position_based(boid_og, flock, sensor_range, t)
+
         # Update speed for boid i
         vx, vy = boid_og.get_velocity()
         vx += dt * (cs_x + ax_pos_based)
@@ -168,11 +168,6 @@ def update(flock, t):
         flock[i].update_velocity(vx, vy)
         flock[i].update_position()  # points.set_data(x, y)
 
-    # p1x, p1y = flock[0].get_position()
-    # p2x, p2y = flock[1].get_position()
-    # print("\npos1: ", round(p1x,2), " ", round(p1y,2))
-    # print("pos2: ", round(p2x,2), " ", round(p2y,2))
-    # print("dist: ", round(distance_between_agents(flock[0], flock[1]),2))
     return t
 
 def main():
@@ -182,25 +177,23 @@ def main():
     blueColor = (255, 50, 50)
     agentRadius = 3
 
-    x = np.random.randint(
-        200, 300, size=(NUMBER_OF_AGENTS)
-    )  # todo: mangler at tjekke om de spawner oven i hinanden
+    # Generate random positions
+    x = np.random.randint(200, 300, size=(NUMBER_OF_AGENTS))
     y = np.random.randint(200, 300, size=(NUMBER_OF_AGENTS))
 
-    # Velocities
+    # Generate random velocities
     vx = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_AGENTS,))
     vy = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_AGENTS,))
 
-    flock = []  # Make the flock
+    # Make the flock
+    flock = []
     for i in range(NUMBER_OF_AGENTS):
         flock.append(Boids(i, x[i], y[i], vx[i], vy[i], HEIGHT, WIDTH))
 
-    # hold = False  # Flag to control the hold state
+    # Time variable
     timeIterator = 0
 
-    #Time passed
-    T = 0.1
-
+    # Do the simulation
     while True:
         img = imgclear.copy()  # to clear the image
 
@@ -209,8 +202,6 @@ def main():
         for i in range(NUMBER_OF_AGENTS):
             xBoid, yBoid = flock[i].get_position()
             cv2.circle(img, (int(xBoid), int(yBoid)), agentRadius, blueColor, -1)
-
-        T += 0.1
 
         cv2.imshow("Window", img)
 
