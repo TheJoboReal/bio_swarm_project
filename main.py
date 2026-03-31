@@ -396,6 +396,9 @@ def main():
     # Time passed
     T = 0.1
 
+    #trace plot ting
+    traces = [[] for _ in range(NUMBER_OF_AGENTS)]
+
     # Do the simulation
     while True:
         img = imgclear.copy()  # to clear the image
@@ -406,7 +409,14 @@ def main():
             xBoid, yBoid = flock[i].get_position()
             cv2.circle(img, (int(xBoid), int(yBoid)), agentRadius, blueColor, -1)
 
+        #trace save points (test)
+        for i in range(NUMBER_OF_AGENTS):
+            xBoid, yBoid = flock[i].get_position()
+            traces[i].append((xBoid, yBoid))
+
         cv2.imshow("Window", img)
+
+        print(traces)
 
         if cv2.waitKey(1) == ord("q"):
             break
@@ -425,6 +435,25 @@ def main():
 
     cv2.destroyAllWindows()
 
+    ############# plot trace
+    plt.figure()
+    for i in range(NUMBER_OF_AGENTS):
+        if len(traces[i]) > 1:
+            xs = [p[0] for p in traces[i]]
+            ys = [p[1] for p in traces[i]]
+            n = len(xs)
+            print("\n")
+            for j in range(n - 1):
+                alpha = 0.20 + 0.75 * (j / (n - 4))
+                print(alpha)
+                plt.plot(xs[j:j+2], ys[j:j+2], color="blue", alpha=alpha, linewidth=1.2)
+    plt.xlim(0, WIDTH)
+    plt.ylim(0, HEIGHT)
+    plt.gca().set_aspect('equal')
+    plt.savefig("trace_plot.png")
+ 
+
+    
     plt.plot(gamma_t)
     plt.savefig("gamma_t_plot.png")
 

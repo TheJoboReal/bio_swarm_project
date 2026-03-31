@@ -4,5 +4,4 @@
 - [x] Implement the threshold and gain stuff from the paper.
 - [] Implement clustering metric gamma (page 8).
 - [x] Distance function needs to take wrap-around into account.
-- [] Change speed limiter to saturation (page 4 bottom).
-- [] Trace for following agents for the final plots in paper.
+- [x] Trace for following agents for the final plots in paper.
