@@ -82,14 +82,14 @@ def control_input_velocity_based(boid, flock, sensor_range, delta):
             distance = distance_between_agents(boid, flock[j])
             if 0 < distance < sensor_range:
                 # Calculate cohesion-seperation gain:
-                cohesion_separation_gain = 1 - (delta * neighbor_count) / distance
+                cohesion_separation_gain_psi = 1 - (delta * neighbor_count) / distance
 
                 # Then calculate cohesion_separation control input from cohesion_separation
                 boid_pos_x, boid_pos_y = boid.get_position()
                 neighbor_pos_x, neighbor_pos_y = flock[j].get_position()
 
-                cohesion_separation_x += cohesion_separation_gain * (neighbor_pos_x - boid_pos_x)
-                cohesion_separation_y += cohesion_separation_gain * (neighbor_pos_y - boid_pos_y)
+                cohesion_separation_x += cohesion_separation_gain_psi * (neighbor_pos_x - boid_pos_x)
+                cohesion_separation_y += cohesion_separation_gain_psi * (neighbor_pos_y - boid_pos_y)
 
     #### Calculate alignment (velocity based!)
     #   Get current velocity
@@ -139,14 +139,14 @@ def control_input_position_based_NO_threshold(boid, flock, sensor_range, delta, 
             distance = distance_between_agents(boid, flock[j])
             if 0 < distance < sensor_range:
                 # Calculate cohesion-seperation gain:
-                cohesion_separation_gain = 1 - (delta * neighbor_count) / distance
+                cohesion_separation_gain_psi = 1 - (delta * neighbor_count) / distance
 
                 # Then calculate cohesion_separation control input from cohesion_separation / attraction_repulsive-term
                 boid_pos_x, boid_pos_y = boid.get_position()
                 neighbor_pos_x, neighbor_pos_y = flock[j].get_position()
 
-                cohesion_separation_x += cohesion_separation_gain * (neighbor_pos_x - boid_pos_x)
-                cohesion_separation_y += cohesion_separation_gain * (neighbor_pos_y - boid_pos_y)
+                cohesion_separation_x += cohesion_separation_gain_psi * (neighbor_pos_x - boid_pos_x)
+                cohesion_separation_y += cohesion_separation_gain_psi * (neighbor_pos_y - boid_pos_y)
 
 
     ### Calculate alignment (Position based!)
@@ -157,7 +157,7 @@ def control_input_position_based_NO_threshold(boid, flock, sensor_range, delta, 
         if j != i:
             distance = distance_between_agents(boid, flock[j])
 
-            if distance < sensor_range:
+            if 0 < distance < sensor_range:
                 # Get current positions
                 boid_pos_x, boid_pos_y = boid.get_position()
                 neighbor_pos_x, neighbor_pos_y = flock[j].get_position()
@@ -167,9 +167,7 @@ def control_input_position_based_NO_threshold(boid, flock, sensor_range, delta, 
 
                 # Get initial positions
                 boid_pos_x_init, boid_pos_y_init = boid.get_initial_position()
-                neighbor_pos_x_init, neighbor_pos_y_init = flock[
-                    j
-                ].get_initial_position()
+                neighbor_pos_x_init, neighbor_pos_y_init = flock[j].get_initial_position()
                 # Initial relative position
                 rel_x_0 = neighbor_pos_x_init - boid_pos_x_init
                 rel_y_0 = neighbor_pos_y_init - boid_pos_y_init
@@ -207,11 +205,11 @@ def control_input_position_based_with_threshold(boid, flock, sensor_range, delta
 
 
     ### Calculate time-dependt alignment gain phi
-    psi = 0.0
-    if 0 < t < 1/k:
-        psi = neighbor_count / t
+    phi = 0.0
+    if 0 < t <= 1/k:
+        phi = neighbor_count / t
     elif t > 1/k:
-        psi = k * neighbor_count
+        phi = k * neighbor_count
 
 
     #### Calculate cohesion separation
@@ -222,62 +220,48 @@ def control_input_position_based_with_threshold(boid, flock, sensor_range, delta
             if 0 < distance < sensor_range:
 
                 # Calculate cohesion-seperation gain:
-                cohesion_separation_gain = 1 - (delta * neighbor_count) / distance
+                cohesion_separation_gain_psi = 1 - (delta * neighbor_count) / distance
 
                 # Then calculate cohesion_separation control input from cohesion_separation / attraction_repulsive-term
                 boid_pos_x, boid_pos_y = boid.get_position()
                 neighbor_pos_x, neighbor_pos_y = flock[j].get_position()
 
-                cohesion_separation_x += (cohesion_separation_gain + psi) * (neighbor_pos_x - boid_pos_x)
-                cohesion_separation_y += (cohesion_separation_gain + psi) * (neighbor_pos_y - boid_pos_y)
+                cohesion_separation_x += (cohesion_separation_gain_psi + phi) * (neighbor_pos_x - boid_pos_x)
+                cohesion_separation_y += (cohesion_separation_gain_psi + phi) * (neighbor_pos_y - boid_pos_y)
 
 
     ### Calculate alignment (Position based!)
-    sum_dx = 0.0
-    sum_dy = 0.0
+    rel_x_0 = 0.0
+    rel_y_0 = 0.0
 
     for j in range(NUMBER_OF_AGENTS):
         if j != i:
             distance = distance_between_agents(boid, flock[j])
 
-            if distance < sensor_range:
-                # Get current positions
-                boid_pos_x, boid_pos_y = boid.get_position()
-                neighbor_pos_x, neighbor_pos_y = flock[j].get_position()
-                # Last relative position
-                rel_x_now = neighbor_pos_x - boid_pos_x
-                rel_y_now = neighbor_pos_y - boid_pos_y
-
+            if 0 < distance < sensor_range:
                 #Get initial positions
                 boid_pos_x_init, boid_pos_y_init = boid.get_initial_position()
                 neighbor_pos_x_init, neighbor_pos_y_init = flock[j].get_initial_position()
                 # Initial relative position
-                rel_x_0 = neighbor_pos_x_init - boid_pos_x_init
-                rel_y_0 = neighbor_pos_y_init - boid_pos_y_init
+                rel_x_0 += neighbor_pos_x_init - boid_pos_x_init
+                rel_y_0 += neighbor_pos_y_init - boid_pos_y_init
 
-                # sum of changes
-                sum_dx += rel_x_now - rel_x_0
-                sum_dy += rel_y_now - rel_y_0
-
-    alignment_x = psi * sum_dx
-    alignment_y = psi * sum_dy
+    alignment_x = phi * rel_x_0
+    alignment_y = phi * rel_y_0
 
 
     ### Control input for boid i
-    control_input_x = cohesion_separation_x + alignment_x
-    control_input_y = cohesion_separation_y + alignment_y
+    control_input_x = cohesion_separation_x - alignment_x
+    control_input_y = cohesion_separation_y - alignment_y
 
     return control_input_x, control_input_y
-
-
-dt = 0.1  # ???
 
 
 
 def update(flock, t, gamma_t):
     
     #Update time step
-    dt = 0.1
+    dt = 0.10
     t += dt
 
     # Update each boid individually
@@ -285,15 +269,17 @@ def update(flock, t, gamma_t):
         boid_og = flock[i]  # original
         sensor_range = 60
         delta = 7.5
-        u_x_vel_based, u_y_vel_based = control_input_velocity_based(boid_og, flock, sensor_range, delta)
-        u_x_pos_based, u_y_pos_based = control_input_position_based_NO_threshold(boid_og, flock, sensor_range, delta, t)
+
+        #### Different "modes" (bedre navn end "modes"?) 
+        #u_x_vel_based, u_y_vel_based = control_input_velocity_based(boid_og, flock, sensor_range, delta)
+        #u_x_pos_based, u_y_pos_based = control_input_position_based_NO_threshold(boid_og, flock, sensor_range, delta, t)
         u_x_pos_based_threshold, u_y_pos_based_threshold = control_input_position_based_with_threshold(boid_og, flock, sensor_range, delta, t, k=0.1)
 
 
         # Update speed for boid i
         vx, vy = boid_og.get_velocity()
-        vx += dt * u_x_vel_based
-        vy += dt * u_y_vel_based
+        vx += dt * u_x_pos_based_threshold
+        vy += dt * u_y_pos_based_threshold
 
         # speed limiter
         speed = np.sqrt(vx**2 + vy**2)
@@ -314,8 +300,9 @@ def update(flock, t, gamma_t):
     gamma_value = gamma_sum / len(flock)
     gamma_t.append(gamma_value)
 
-    print(t)
-    print(gamma_value)
+    print("t: ", t)
+    return round(t, 1)
+    #print(gamma_value)
 
 
 def main():
@@ -350,7 +337,7 @@ def main():
     while True:
         img = imgclear.copy()  # to clear the image
 
-        update(flock, T, gamma_t)
+        T = update(flock, T, gamma_t)
 
         for i in range(NUMBER_OF_AGENTS):
             xBoid, yBoid = flock[i].get_position()
