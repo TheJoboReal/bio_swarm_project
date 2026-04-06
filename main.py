@@ -15,7 +15,7 @@ DEFAULT_EPOCHS = 1
 DEFAULT_HEIGHT = 700
 DEFAULT_WIDTH = 700
 
-
+# uv run main.py --agents 50 --steps 100 --max_speed 2 --epochs 3 --height 700 --width 700
 def parse_args():
     parser = argparse.ArgumentParser(description="Boids Simulation")
     parser.add_argument("--agents", type=int, default=DEFAULT_NUMBER_OF_AGENTS, help="Number of agents in the simulation")
@@ -158,7 +158,7 @@ def control_input_velocity_based(boid, flock, sensor_range, delta):
 
     #### Count number of neighbors
     neighbor_count = 0
-    for j in range(NUMBER_OF_AGENTS):
+    for j in range(len(flock)):
         if i != j:
             distance = distance_between_agents(boid, flock[j])
             if 0 < distance < sensor_range:  # "0 <" to avoid dividing by zero later
@@ -166,7 +166,7 @@ def control_input_velocity_based(boid, flock, sensor_range, delta):
 
     #### Calculate cohesion separation
     cohesion_separation_x, cohesion_separation_y = 0.0, 0.0
-    for j in range(NUMBER_OF_AGENTS):
+    for j in range(len(flock)):
         if i != j:
             distance = distance_between_agents(boid, flock[j])
             if 0 < distance < sensor_range:
@@ -187,7 +187,7 @@ def control_input_velocity_based(boid, flock, sensor_range, delta):
 
     # Calculate allignment part
     alignment_x, alignment_y = 0.0, 0.0
-    for j in range(NUMBER_OF_AGENTS):
+    for j in range(len(flock)):
         if i != j:
             distance = distance_between_agents(boid, flock[j])
             if 0 < distance < sensor_range: # "0 <" to avoid dividing by zero later
@@ -224,7 +224,7 @@ def control_input_position_based_NO_threshold(boid, flock, sensor_range, delta, 
 
     #### Calculate cohesion separation
     cohesion_separation_x, cohesion_separation_y = 0.0, 0.0
-    for j in range(NUMBER_OF_AGENTS):
+    for j in range(len(flock)):
         if i != j:
             distance = distance_between_agents(boid, flock[j])
             if 0 < distance < sensor_range:
@@ -244,7 +244,7 @@ def control_input_position_based_NO_threshold(boid, flock, sensor_range, delta, 
     sum_dx = 0.0
     sum_dy = 0.0
 
-    for j in range(NUMBER_OF_AGENTS):
+    for j in range(len(flock)):
         if j != i:
             distance = distance_between_agents(boid, flock[j])
 
@@ -283,7 +283,6 @@ def control_input_position_based_NO_threshold(boid, flock, sensor_range, delta, 
 dt = 0.1  # ???
 
 
-def update(flock, t, gamma_t, MAX_SPEED):
 
 #################### Position Based With Threshold ####################
 def control_input_position_based_with_threshold(boid, flock, sensor_range, delta, t, k):
@@ -292,11 +291,11 @@ def control_input_position_based_with_threshold(boid, flock, sensor_range, delta
 
     #### Count number of neighbors
     neighbor_count = 0
-    for j in range(NUMBER_OF_AGENTS):
+    for j in range(len(flock)):
         if i != j:
             distance = distance_between_agents(boid, flock[j])
             if 0 < distance < sensor_range: # "0 <" to avoid dividing by zero later
-                neighbor_count += 1 #Count number of neighbors
+               neighbor_count += 1 #Count number of neighbors
 
 
     ### Calculate time-dependt alignment gain phi
@@ -309,7 +308,7 @@ def control_input_position_based_with_threshold(boid, flock, sensor_range, delta
 
     #### Calculate cohesion separation
     cohesion_separation_x, cohesion_separation_y = 0.0, 0.0
-    for j in range(NUMBER_OF_AGENTS):
+    for j in range(len(flock)):
         if i != j:
             distance = distance_between_agents(boid, flock[j])
             if 0 < distance < sensor_range:
@@ -330,7 +329,7 @@ def control_input_position_based_with_threshold(boid, flock, sensor_range, delta
     rel_x_0 = 0.0
     rel_y_0 = 0.0
 
-    for j in range(NUMBER_OF_AGENTS):
+    for j in range(len(flock)):
         if j != i:
             distance = distance_between_agents(boid, flock[j])
 
@@ -353,15 +352,15 @@ def control_input_position_based_with_threshold(boid, flock, sensor_range, delta
     return control_input_x, control_input_y
 
 
-
-def update(flock, t, gamma_t):
+def update(flock, t, gamma_t, MAX_SPEED):
+    #def update(flock, t, gamma_t):
     
     #Update time step
     dt = 0.10
     t += dt
 
     # Update each boid individually
-    for i in range(NUMBER_OF_AGENTS):
+    for i in range(len(flock)):
         #Extract current boid
         boid_og = flock[i]
 
@@ -427,7 +426,7 @@ def main():
 
     EPOCHS = args.epochs
 
-
+    # White background
     img = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255 )  # for at få en hvid baggrund
     imgclear = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255)  # for at få en hvid baggrund
 
@@ -447,64 +446,64 @@ def main():
     for i in range(NUMBER_OF_AGENTS):
         flock.append(Boids(i, x[i], y[i], vx[i], vy[i], HEIGHT, WIDTH))
 
-    # hold = False  # Flag to control the hold state
     # gamma_t directional alignment values over time.
     gamma_t = []
+    
 
-    # Time passed
-    T = 0.1
+    for epoch in range(EPOCHS):
+        # Time passed
+        T = 0.1
 
-    #trace plot ting
-    traces = [[] for _ in range(NUMBER_OF_AGENTS)]
+        #trace plot ting
+        traces = [[] for _ in range(NUMBER_OF_AGENTS)]
 
-    # Do the simulation
-    while True:
-        img = imgclear.copy()  # to clear the image
+        # Do the simulation
+        while (T < DEFAULT_STEPS):
+            #while True:
+            img = imgclear.copy()  # to clear the image
 
-        T = update(flock, T, gamma_t)
+            T = update(flock, T, gamma_t, MAX_SPEED)
+            #update(flock, T, gamma_t, MAX_SPEED)
 
-            update(flock, T, gamma_t, MAX_SPEED)
-
-        #trace save points (test)
-        for i in range(NUMBER_OF_AGENTS):
-            xBoid, yBoid = flock[i].get_position()
-            traces[i].append((xBoid, yBoid))
+            #trace save points (test)
+            for i in range(NUMBER_OF_AGENTS):
+                xBoid, yBoid = flock[i].get_position()
+                cv2.circle(img, (int(xBoid), int(yBoid)), agentRadius, blueColor, -1)
+                traces[i].append((xBoid, yBoid))
 
             cv2.imshow("Window", img)
 
-        print(traces)
+            print(traces)
 
-        if cv2.waitKey(1) == ord("q"):
-            break
-
+            if cv2.waitKey(1) == ord("q"):
+                break
 
         cv2.destroyAllWindows()
 
         plt.plot(gamma_t)
         plt.savefig("gamma_t_plot.png")
 
-    ############# plot trace
-    plt.figure()
-    for i in range(NUMBER_OF_AGENTS):
-        if len(traces[i]) > 1:
-            xs = [p[0] for p in traces[i]]
-            ys = [p[1] for p in traces[i]]
-            n = len(xs)
-            print("\n")
-            for j in range(n - 1):
-                alpha = 0.20 + 0.75 * (j / (n - 4))
-                print(alpha)
-                plt.plot(xs[j:j+2], ys[j:j+2], color="blue", alpha=alpha, linewidth=1.2)
-    plt.xlim(0, WIDTH)
-    plt.ylim(0, HEIGHT)
-    plt.gca().set_aspect('equal')
-    plt.savefig("trace_plot.png")
- 
-
-    
-    plt.plot(gamma_t)
-    plt.savefig("gamma_t_plot.png")
+        # Plot trace
+        plt.figure()
+        for i in range(NUMBER_OF_AGENTS):
+            if len(traces[i]) > 1:
+                xs = [p[0] for p in traces[i]]
+                ys = [p[1] for p in traces[i]]
+                n = len(xs)
+                print("\n")
+                for j in range(n - 1):
+                    alpha = 0.20 + 0.75 * (j / (n - 4))
+                    print(alpha)
+                    plt.plot(xs[j:j+2], ys[j:j+2], color="blue", alpha=alpha, linewidth=1.2)
+        plt.xlim(0, WIDTH)
+        plt.ylim(0, HEIGHT)
+        plt.gca().set_aspect('equal')
+        plt.savefig("trace_plot.png")
 
 
-############ Main
+        plt.plot(gamma_t)
+        plt.savefig("gamma_t_plot.png")
+
+
+# Main
 main()
