@@ -15,6 +15,7 @@ DEFAULT_EPOCHS = 1
 DEFAULT_HEIGHT = 700
 DEFAULT_WIDTH = 700
 
+# uv run main.py --agents 50 --steps 40 --max_speed 1.5 --epochs 2 --height 700 --width 700 --mode position_threshold 
 # uv run main.py --agents 50 --steps 100 --max_speed 2 --epochs 3 --height 700 --width 700
 def parse_args():
     parser = argparse.ArgumentParser(description="Boids Simulation")
@@ -24,40 +25,9 @@ def parse_args():
     parser.add_argument("--epochs", type=int, default=DEFAULT_EPOCHS, help="Number of epochs")
     parser.add_argument("--height", type=int, default=DEFAULT_HEIGHT, help="Window height")
     parser.add_argument("--width", type=int, default=DEFAULT_WIDTH, help="Window width")
+    parser.add_argument("--mode", type=str, default="velocity", choices=["velocity", "position", "position_threshold"], help="Simulation mode: 'velocity', 'position', or 'position_threshold'")
     return parser.parse_args()
 
-
-# Calculate the gamma [-1,1] value that represents the drectional alignment. If gamma is approx 1, it indicates near-parallel velocities (strong alignment) and values near or below 0 indicat-ing misalignment. By normalizing direction, this metric isolates directional consensus from speed differences
-def directional_alignment(boid, flock, neighbor):
-    vx_i, vy_i = boid.get_velocity()
-    norm_vi = math.sqrt(vx_i**2 + vy_i**2)
-
-    if norm_vi == 0:
-        return 0
-
-    i = boid.get_id()
-
-    sum_alignment = 0.0
-    neighbor_count = 0
-
-    for j in neighbor:
-        if i == j:
-            continue
-
-        vx_j, vy_j = flock[j].get_velocity()
-        norm_vj = math.sqrt(vx_j**2 + vy_j**2)
-
-        if norm_vj == 0:
-            continue
-
-        dot = vx_i * vx_j + vy_i * vy_j
-        sum_alignment += dot / (norm_vi * norm_vj)
-        neighbor_count += 1
-
-    if neighbor_count == 0:
-        return 0
-
-    return sum_alignment / neighbor_count
 
 
 # Calculate the gamma [-1,1] value that represents the drectional alignment. If gamma is approx 1, it indicates near-parallel velocities (strong alignment) and values near or below 0 indicat-ing misalignment. By normalizing direction, this metric isolates directional consensus from speed differences
@@ -95,18 +65,6 @@ def directional_alignment_metric(boid, flock, neighbor):
 
 
 #################### Distance functions  ####################
-# def distance_between_agents(boid_og, neighbor):
-
-#     x_og, y_og = boid_og.get_position()
-#     x_nb, y_nb = neighbor.get_position()
-
-#     dist_x = x_nb - x_og
-#     dist_y = y_nb - y_og
-
-#     distance = np.sqrt(dist_x**2 + dist_y**2)
-#     # print("distance ", distance)
-#     return distance
-
 def distance_between_agents(boid_og, neighbor): #Normal distance function that takes care of wrap
     x_og, y_og = boid_og.get_position()
     x_nb, y_nb = neighbor.get_position()
@@ -205,9 +163,6 @@ def control_input_velocity_based(boid, flock, sensor_range, delta):
 
 
 
-
-
-
 #################### Position Based Without Threshold ####################
 def control_input_position_based_NO_threshold(boid, flock, sensor_range, delta, t):
     # Get index of current boid
@@ -280,7 +235,6 @@ def control_input_position_based_NO_threshold(boid, flock, sensor_range, delta, 
     return control_input_x, control_input_y
 
 
-dt = 0.1  # ???
 
 
 
@@ -352,7 +306,7 @@ def control_input_position_based_with_threshold(boid, flock, sensor_range, delta
     return control_input_x, control_input_y
 
 
-def update(flock, t, gamma_t, MAX_SPEED):
+def update(flock, t, gamma_t, MAX_SPEED, mode):
     #def update(flock, t, gamma_t):
     
     #Update time step
@@ -374,22 +328,21 @@ def update(flock, t, gamma_t, MAX_SPEED):
         vx, vy = boid_og.get_velocity()
 
 
-        #### Different modes:
-        ## Velocity based control
-        u_x_vel_based, u_y_vel_based = control_input_velocity_based(boid_og, flock, sensor_range, delta)
-        vx += dt * u_x_vel_based
-        vy += dt * u_y_vel_based
-
-        ## Position based control
-        # u_x_pos_based, u_y_pos_based = control_input_position_based_NO_threshold(boid_og, flock, sensor_range, delta, t)
-        # vx += dt * u_x_pos_based
-        # vy += dt * u_y_pos_based
-
-        ## Position based control with threshold
-        # u_x_pos_based_threshold, u_y_pos_based_threshold = control_input_position_based_with_threshold(boid_og, flock, sensor_range, delta, t, k=0.1)
-        # vx += dt * u_x_pos_based_threshold
-        # vy += dt * u_y_pos_based_threshold
-
+        # Different modes:
+        if mode == "velocity": # Velocity based control
+            u_x_vel_based, u_y_vel_based = control_input_velocity_based(boid_og, flock, sensor_range, delta)
+            vx += dt * u_x_vel_based
+            vy += dt * u_y_vel_based
+        elif mode == "position": # Position based control
+            u_x_pos_based, u_y_pos_based = control_input_position_based_NO_threshold(boid_og, flock, sensor_range, delta, t)
+            vx += dt * u_x_pos_based
+            vy += dt * u_y_pos_based
+        elif mode == "position_threshold": # Position based control with threshold
+            u_x_pos_based_threshold, u_y_pos_based_threshold = control_input_position_based_with_threshold(boid_og, flock, sensor_range, delta, t, k=0.1)
+            vx += dt * u_x_pos_based_threshold
+            vy += dt * u_y_pos_based_threshold
+        else:
+            raise ValueError(f"Unknown mode: {mode}")
 
         # speed limiter
         speed = np.sqrt(vx**2 + vy**2)
@@ -410,7 +363,7 @@ def update(flock, t, gamma_t, MAX_SPEED):
     gamma_value = gamma_sum / len(flock)
     gamma_t.append(gamma_value)
 
-    print("t: ", t)
+    # print("t: ", t)
     return round(t, 1)
     #print(gamma_value)
 
@@ -423,6 +376,7 @@ def main():
     MAX_SPEED = args.max_speed
     HEIGHT = args.height
     WIDTH = args.width
+    MODE = args.mode
 
     EPOCHS = args.epochs
     for epoch in range(EPOCHS):
@@ -461,7 +415,7 @@ def main():
             #while True:
             img = imgclear.copy()  # to clear the image
 
-            T = update(flock, T, gamma_t, MAX_SPEED)
+            T = update(flock, T, gamma_t, MAX_SPEED, MODE)
             #print(T)
             #update(flock, T, gamma_t, MAX_SPEED)
 
