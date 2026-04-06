@@ -15,19 +15,41 @@ DEFAULT_EPOCHS = 1
 DEFAULT_HEIGHT = 700
 DEFAULT_WIDTH = 700
 
-# uv run main.py --agents 50 --steps 40 --max_speed 1.5 --epochs 2 --height 700 --width 700 --mode position_threshold 
+
+# uv run main.py --agents 50 --steps 40 --max_speed 1.5 --epochs 2 --height 700 --width 700 --mode position_threshold
 # uv run main.py --agents 50 --steps 100 --max_speed 2 --epochs 3 --height 700 --width 700
 def parse_args():
     parser = argparse.ArgumentParser(description="Boids Simulation")
-    parser.add_argument("--agents", type=int, default=DEFAULT_NUMBER_OF_AGENTS, help="Number of agents in the simulation")
-    parser.add_argument("--steps", type=int, default=DEFAULT_STEPS, help="Number of simulation steps")
-    parser.add_argument("--max_speed", type=float, default=DEFAULT_MAX_SPEED, help="Maximum speed of agents")
-    parser.add_argument("--epochs", type=int, default=DEFAULT_EPOCHS, help="Number of epochs")
-    parser.add_argument("--height", type=int, default=DEFAULT_HEIGHT, help="Window height")
+    parser.add_argument(
+        "--agents",
+        type=int,
+        default=DEFAULT_NUMBER_OF_AGENTS,
+        help="Number of agents in the simulation",
+    )
+    parser.add_argument(
+        "--steps", type=int, default=DEFAULT_STEPS, help="Number of simulation steps"
+    )
+    parser.add_argument(
+        "--max_speed",
+        type=float,
+        default=DEFAULT_MAX_SPEED,
+        help="Maximum speed of agents",
+    )
+    parser.add_argument(
+        "--epochs", type=int, default=DEFAULT_EPOCHS, help="Number of epochs"
+    )
+    parser.add_argument(
+        "--height", type=int, default=DEFAULT_HEIGHT, help="Window height"
+    )
     parser.add_argument("--width", type=int, default=DEFAULT_WIDTH, help="Window width")
-    parser.add_argument("--mode", type=str, default="velocity", choices=["velocity", "position", "position_threshold"], help="Simulation mode: 'velocity', 'position', or 'position_threshold'")
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default="velocity",
+        choices=["velocity", "position", "position_threshold"],
+        help="Simulation mode: 'velocity', 'position', or 'position_threshold'",
+    )
     return parser.parse_args()
-
 
 
 # Calculate the gamma [-1,1] value that represents the drectional alignment. If gamma is approx 1, it indicates near-parallel velocities (strong alignment) and values near or below 0 indicat-ing misalignment. By normalizing direction, this metric isolates directional consensus from speed differences
@@ -63,9 +85,10 @@ def directional_alignment_metric(boid, flock, neighbor):
     return sum_alignment / neighbor_count
 
 
-
 #################### Distance functions  ####################
-def distance_between_agents(boid_og, neighbor): #Normal distance function that takes care of wrap
+def distance_between_agents(
+    boid_og, neighbor
+):  # Normal distance function that takes care of wrap
     x_og, y_og = boid_og.get_position()
     x_nb, y_nb = neighbor.get_position()
 
@@ -87,7 +110,9 @@ def distance_between_agents(boid_og, neighbor): #Normal distance function that t
     return np.sqrt(dx**2 + dy**2)
 
 
-def relative_position(boid_og, neighbor): #Fucntion for calculating relative distance (used in all three "modes")
+def relative_position(
+    boid_og, neighbor
+):  # Fucntion for calculating relative distance (used in all three "modes")
     x_og, y_og = boid_og.get_position()
     x_nb, y_nb = neighbor.get_position()
 
@@ -105,8 +130,6 @@ def relative_position(boid_og, neighbor): #Fucntion for calculating relative dis
         dy += boid_og.height
 
     return dx, dy
-
-
 
 
 #################### Velocity based  ####################
@@ -132,12 +155,16 @@ def control_input_velocity_based(boid, flock, sensor_range, delta):
                 cohesion_separation_gain_psi = 1 - (delta * neighbor_count) / distance
 
                 # Then calculate cohesion_separation control input from cohesion_separation
-                    # boid_pos_x, boid_pos_y = boid.get_position()
-                    # neighbor_pos_x, neighbor_pos_y = flock[j].get_position()
+                # boid_pos_x, boid_pos_y = boid.get_position()
+                # neighbor_pos_x, neighbor_pos_y = flock[j].get_position()
                 dx, dy = relative_position(boid, flock[j])
 
-                cohesion_separation_x += cohesion_separation_gain_psi * dx #(neighbor_pos_x - boid_pos_x)
-                cohesion_separation_y += cohesion_separation_gain_psi * dy #(neighbor_pos_y - boid_pos_y)
+                cohesion_separation_x += (
+                    cohesion_separation_gain_psi * dx
+                )  # (neighbor_pos_x - boid_pos_x)
+                cohesion_separation_y += (
+                    cohesion_separation_gain_psi * dy
+                )  # (neighbor_pos_y - boid_pos_y)
 
     #### Calculate alignment (velocity based!)
     #   Get current velocity
@@ -148,19 +175,16 @@ def control_input_velocity_based(boid, flock, sensor_range, delta):
     for j in range(len(flock)):
         if i != j:
             distance = distance_between_agents(boid, flock[j])
-            if 0 < distance < sensor_range: # "0 <" to avoid dividing by zero later
+            if 0 < distance < sensor_range:  # "0 <" to avoid dividing by zero later
                 neighbor_vx, neighbor_vy = flock[j].get_velocity()
                 alignment_x += neighbor_vx - boid_vx
                 alignment_y += neighbor_vy - boid_vy
-
 
     #### Control input for boid i
     control_input_x = cohesion_separation_x + alignment_x
     control_input_y = cohesion_separation_y + alignment_y
 
     return control_input_x, control_input_y
-
-
 
 
 #################### Position Based Without Threshold ####################
@@ -176,7 +200,6 @@ def control_input_position_based_NO_threshold(boid, flock, sensor_range, delta, 
             if 0 < distance < sensor_range:  # "0 <" to avoid dividing by zero later
                 neighbor_count += 1  # Count number of neighbors
 
-
     #### Calculate cohesion separation
     cohesion_separation_x, cohesion_separation_y = 0.0, 0.0
     for j in range(len(flock)):
@@ -187,13 +210,16 @@ def control_input_position_based_NO_threshold(boid, flock, sensor_range, delta, 
                 cohesion_separation_gain_psi = 1 - (delta * neighbor_count) / distance
 
                 # Then calculate cohesion_separation control input from cohesion_separation / attraction_repulsive-term
-                    # boid_pos_x, boid_pos_y = boid.get_position()
-                    # neighbor_pos_x, neighbor_pos_y = flock[j].get_position()
+                # boid_pos_x, boid_pos_y = boid.get_position()
+                # neighbor_pos_x, neighbor_pos_y = flock[j].get_position()
                 dx, dy = relative_position(boid, flock[j])
 
-                cohesion_separation_x += cohesion_separation_gain_psi * dx #(neighbor_pos_x - boid_pos_x)
-                cohesion_separation_y += cohesion_separation_gain_psi * dy #(neighbor_pos_y - boid_pos_y)
-
+                cohesion_separation_x += (
+                    cohesion_separation_gain_psi * dx
+                )  # (neighbor_pos_x - boid_pos_x)
+                cohesion_separation_y += (
+                    cohesion_separation_gain_psi * dy
+                )  # (neighbor_pos_y - boid_pos_y)
 
     ### Calculate alignment (Position based!)
     sum_dx = 0.0
@@ -205,17 +231,19 @@ def control_input_position_based_NO_threshold(boid, flock, sensor_range, delta, 
 
             if 0 < distance < sensor_range:
                 # Get current positions
-                    # boid_pos_x, boid_pos_y = boid.get_position()
-                    # neighbor_pos_x, neighbor_pos_y = flock[j].get_position()
+                # boid_pos_x, boid_pos_y = boid.get_position()
+                # neighbor_pos_x, neighbor_pos_y = flock[j].get_position()
                 dx, dy = relative_position(boid, flock[j])
 
                 # Last relative position
-                rel_x_now = dx #neighbor_pos_x - boid_pos_x
-                rel_y_now = dy #neighbor_pos_y - boid_pos_y
+                rel_x_now = dx  # neighbor_pos_x - boid_pos_x
+                rel_y_now = dy  # neighbor_pos_y - boid_pos_y
 
                 # Get initial positions
                 boid_pos_x_init, boid_pos_y_init = boid.get_initial_position()
-                neighbor_pos_x_init, neighbor_pos_y_init = flock[j].get_initial_position()
+                neighbor_pos_x_init, neighbor_pos_y_init = flock[
+                    j
+                ].get_initial_position()
                 # Initial relative position
                 rel_x_0 = neighbor_pos_x_init - boid_pos_x_init
                 rel_y_0 = neighbor_pos_y_init - boid_pos_y_init
@@ -224,18 +252,14 @@ def control_input_position_based_NO_threshold(boid, flock, sensor_range, delta, 
                 sum_dx += rel_x_now - rel_x_0
                 sum_dy += rel_y_now - rel_y_0
 
-    alignment_x = 1/t * sum_dx
-    alignment_y = 1/t * sum_dy
-
+    alignment_x = 1 / t * sum_dx
+    alignment_y = 1 / t * sum_dy
 
     # Control input for boid i
     control_input_x = cohesion_separation_x + alignment_x
     control_input_y = cohesion_separation_y + alignment_y
 
     return control_input_x, control_input_y
-
-
-
 
 
 #################### Position Based With Threshold ####################
@@ -248,17 +272,15 @@ def control_input_position_based_with_threshold(boid, flock, sensor_range, delta
     for j in range(len(flock)):
         if i != j:
             distance = distance_between_agents(boid, flock[j])
-            if 0 < distance < sensor_range: # "0 <" to avoid dividing by zero later
-               neighbor_count += 1 #Count number of neighbors
-
+            if 0 < distance < sensor_range:  # "0 <" to avoid dividing by zero later
+                neighbor_count += 1  # Count number of neighbors
 
     ### Calculate time-dependt alignment gain phi
     phi = 0.0
-    if 0 < t <= 1/k:
+    if 0 < t <= 1 / k:
         phi = neighbor_count / t
-    elif t > 1/k:
+    elif t > 1 / k:
         phi = k * neighbor_count
-
 
     #### Calculate cohesion separation
     cohesion_separation_x, cohesion_separation_y = 0.0, 0.0
@@ -266,18 +288,20 @@ def control_input_position_based_with_threshold(boid, flock, sensor_range, delta
         if i != j:
             distance = distance_between_agents(boid, flock[j])
             if 0 < distance < sensor_range:
-
                 # Calculate cohesion-seperation gain:
                 cohesion_separation_gain_psi = 1 - (delta * neighbor_count) / distance
 
                 # Then calculate cohesion_separation control input from cohesion_separation / attraction_repulsive-term
-                    # boid_pos_x, boid_pos_y = boid.get_position()
-                    # neighbor_pos_x, neighbor_pos_y = flock[j].get_position()
+                # boid_pos_x, boid_pos_y = boid.get_position()
+                # neighbor_pos_x, neighbor_pos_y = flock[j].get_position()
                 dx, dy = relative_position(boid, flock[j])
 
-                cohesion_separation_x += (cohesion_separation_gain_psi + phi) * dx #(neighbor_pos_x - boid_pos_x)
-                cohesion_separation_y += (cohesion_separation_gain_psi + phi) * dy #(neighbor_pos_y - boid_pos_y)
-
+                cohesion_separation_x += (
+                    cohesion_separation_gain_psi + phi
+                ) * dx  # (neighbor_pos_x - boid_pos_x)
+                cohesion_separation_y += (
+                    cohesion_separation_gain_psi + phi
+                ) * dy  # (neighbor_pos_y - boid_pos_y)
 
     ### Calculate alignment (Position based!)
     rel_x_0 = 0.0
@@ -288,16 +312,17 @@ def control_input_position_based_with_threshold(boid, flock, sensor_range, delta
             distance = distance_between_agents(boid, flock[j])
 
             if 0 < distance < sensor_range:
-                #Get initial positions
+                # Get initial positions
                 boid_pos_x_init, boid_pos_y_init = boid.get_initial_position()
-                neighbor_pos_x_init, neighbor_pos_y_init = flock[j].get_initial_position()
+                neighbor_pos_x_init, neighbor_pos_y_init = flock[
+                    j
+                ].get_initial_position()
                 # Initial relative position
                 rel_x_0 += neighbor_pos_x_init - boid_pos_x_init
                 rel_y_0 += neighbor_pos_y_init - boid_pos_y_init
 
     alignment_x = phi * rel_x_0
     alignment_y = phi * rel_y_0
-
 
     ### Control input for boid i
     control_input_x = cohesion_separation_x - alignment_x
@@ -307,38 +332,45 @@ def control_input_position_based_with_threshold(boid, flock, sensor_range, delta
 
 
 def update(flock, t, gamma_t, MAX_SPEED, mode):
-    #def update(flock, t, gamma_t):
-    
-    #Update time step
-    dt = 0.10
+    # def update(flock, t, gamma_t):
+
+    # Update time step
+    dt = 0.50
     t += dt
 
     # Update each boid individually
     for i in range(len(flock)):
-        #Extract current boid
+        # Extract current boid
         boid_og = flock[i]
 
-        #Range of sensor/boid/bird
+        # Range of sensor/boid/bird
         sensor_range = 60
-        
-        #Sepration gain
+
+        # Sepration gain
         delta = 7.5
 
         # Update speed for boid i
         vx, vy = boid_og.get_velocity()
 
-
         # Different modes:
-        if mode == "velocity": # Velocity based control
-            u_x_vel_based, u_y_vel_based = control_input_velocity_based(boid_og, flock, sensor_range, delta)
+        if mode == "velocity":  # Velocity based control
+            u_x_vel_based, u_y_vel_based = control_input_velocity_based(
+                boid_og, flock, sensor_range, delta
+            )
             vx += dt * u_x_vel_based
             vy += dt * u_y_vel_based
-        elif mode == "position": # Position based control
-            u_x_pos_based, u_y_pos_based = control_input_position_based_NO_threshold(boid_og, flock, sensor_range, delta, t)
+        elif mode == "position":  # Position based control
+            u_x_pos_based, u_y_pos_based = control_input_position_based_NO_threshold(
+                boid_og, flock, sensor_range, delta, t
+            )
             vx += dt * u_x_pos_based
             vy += dt * u_y_pos_based
-        elif mode == "position_threshold": # Position based control with threshold
-            u_x_pos_based_threshold, u_y_pos_based_threshold = control_input_position_based_with_threshold(boid_og, flock, sensor_range, delta, t, k=0.1)
+        elif mode == "position_threshold":  # Position based control with threshold
+            u_x_pos_based_threshold, u_y_pos_based_threshold = (
+                control_input_position_based_with_threshold(
+                    boid_og, flock, sensor_range, delta, t, k=0.1
+                )
+            )
             vx += dt * u_x_pos_based_threshold
             vy += dt * u_y_pos_based_threshold
         else:
@@ -352,20 +384,22 @@ def update(flock, t, gamma_t, MAX_SPEED, mode):
 
         # Execute update for boid i
         flock[i].update_velocity(vx, vy)
-        flock[i].update_position()  # points.set_data(x, y)
+        flock[i].update_position(dt)  # points.set_data(x, y)
 
     # Metric
     gamma_sum = 0.0
     for i in range(len(flock)):
         boid_i = flock[i]
-        gamma_sum += directional_alignment_metric(boid_i, flock, neighbor=range(len(flock)))
+        gamma_sum += directional_alignment_metric(
+            boid_i, flock, neighbor=range(len(flock))
+        )
 
     gamma_value = gamma_sum / len(flock)
     gamma_t.append(gamma_value)
 
     # print("t: ", t)
     return round(t, 1)
-    #print(gamma_value)
+    # print(gamma_value)
 
 
 def main():
@@ -380,13 +414,16 @@ def main():
 
     EPOCHS = args.epochs
     for epoch in range(EPOCHS):
-
         # White background
-        img = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255 )  # for at få en hvid baggrund
-        imgclear = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255)  # for at få en hvid baggrund
+        img = (
+            np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255
+        )  # for at få en hvid baggrund
+        imgclear = (
+            np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255
+        )  # for at få en hvid baggrund
 
         blueColor = (255, 50, 50)
-        agentRadius = 3 # for drawing
+        agentRadius = 3  # for drawing
 
         # Generate random positions
         x = np.random.uniform(0, HEIGHT, size=(NUMBER_OF_AGENTS))
@@ -401,25 +438,24 @@ def main():
         for i in range(NUMBER_OF_AGENTS):
             flock.append(Boids(i, x[i], y[i], vx[i], vy[i], HEIGHT, WIDTH))
 
-    
         # gamma_t directional alignment values over time.
         gamma_t = []
         # Time passed
         T = 0.1
 
-        #trace plot ting
+        # trace plot ting
         traces = [[] for _ in range(NUMBER_OF_AGENTS)]
 
         # Do the simulation
-        while (T < STEPS):
-            #while True:
+        while T < STEPS:
+            # while True:
             img = imgclear.copy()  # to clear the image
 
             T = update(flock, T, gamma_t, MAX_SPEED, MODE)
-            #print(T)
-            #update(flock, T, gamma_t, MAX_SPEED)
+            # print(T)
+            # update(flock, T, gamma_t, MAX_SPEED)
 
-            #trace save points (test)
+            # trace save points (test)
             for i in range(NUMBER_OF_AGENTS):
                 xBoid, yBoid = flock[i].get_position()
                 cv2.circle(img, (int(xBoid), int(yBoid)), agentRadius, blueColor, -1)
@@ -427,7 +463,7 @@ def main():
 
             cv2.imshow("Window", img)
 
-            #print(traces)
+            # print(traces)
 
             if cv2.waitKey(1) == ord("q"):
                 break
@@ -435,7 +471,7 @@ def main():
         cv2.destroyAllWindows()
 
         plt.plot(gamma_t)
-        #plt.savefig("gamma_t_plot.png")
+        # plt.savefig("gamma_t_plot.png")
         plt.savefig(f"gamma_t_plot_epoch_{epoch}.png")
         plt.close()
 
@@ -446,17 +482,24 @@ def main():
                 xs = [p[0] for p in traces[i]]
                 ys = [p[1] for p in traces[i]]
                 n = len(xs)
-                #print("\n")
+                # print("\n")
                 for j in range(n - 1):
                     alpha = 0.20 + 0.75 * (j / (n - 4))
-                    #print(alpha)
-                    plt.plot(xs[j:j+2], ys[j:j+2], color="blue", alpha=alpha, linewidth=1.2)
+                    # print(alpha)
+                    plt.plot(
+                        xs[j : j + 2],
+                        ys[j : j + 2],
+                        color="blue",
+                        alpha=alpha,
+                        linewidth=1.2,
+                    )
         plt.xlim(0, WIDTH)
         plt.ylim(0, HEIGHT)
-        plt.gca().set_aspect('equal')
-        #plt.savefig("trace_plot.png")
+        plt.gca().set_aspect("equal")
+        # plt.savefig("trace_plot.png")
         plt.savefig(f"trace_plot_epoch_{epoch}.png")
         plt.close()
+
 
 # Main
 main()
