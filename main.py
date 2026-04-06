@@ -52,6 +52,13 @@ def parse_args():
     return parser.parse_args()
 
 
+def exponential_smoothing(data, alpha=0.1):
+    smoothed = [data[0]]  # first value as seed
+    for x in data[1:]:
+        smoothed.append(alpha * x + (1 - alpha) * smoothed[-1])
+    return smoothed
+
+
 # Calculate the gamma [-1,1] value that represents the drectional alignment. If gamma is approx 1, it indicates near-parallel velocities (strong alignment) and values near or below 0 indicat-ing misalignment. By normalizing direction, this metric isolates directional consensus from speed differences
 def directional_alignment_metric(boid, flock, neighbor):
     vx_i, vy_i = boid.get_velocity()
@@ -335,7 +342,7 @@ def update(flock, t, gamma_t, MAX_SPEED, mode):
     # def update(flock, t, gamma_t):
 
     # Update time step
-    dt = 0.50
+    dt = 0.10
     t += dt
 
     # Update each boid individually
@@ -470,8 +477,8 @@ def main():
 
         cv2.destroyAllWindows()
 
-        plt.plot(gamma_t)
-        # plt.savefig("gamma_t_plot.png")
+        gamma_smoothed = exponential_smoothing(gamma_t, alpha=0.1)
+        plt.plot(gamma_smoothed)
         plt.savefig(f"gamma_t_plot_epoch_{epoch}.png")
         plt.close()
 
