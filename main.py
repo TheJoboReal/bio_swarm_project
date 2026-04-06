@@ -425,32 +425,31 @@ def main():
     WIDTH = args.width
 
     EPOCHS = args.epochs
-
-    # White background
-    img = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255 )  # for at få en hvid baggrund
-    imgclear = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255)  # for at få en hvid baggrund
-
-    blueColor = (255, 50, 50)
-    agentRadius = 3 # for drawing
-
-    # Generate random positions
-    x = np.random.uniform(0, HEIGHT, size=(NUMBER_OF_AGENTS))
-    y = np.random.uniform(0, WIDTH, size=(NUMBER_OF_AGENTS))
-
-    # Generate random velocities
-    vx = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_AGENTS,))
-    vy = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_AGENTS,))
-
-    # Make the flock
-    flock = []
-    for i in range(NUMBER_OF_AGENTS):
-        flock.append(Boids(i, x[i], y[i], vx[i], vy[i], HEIGHT, WIDTH))
-
-    # gamma_t directional alignment values over time.
-    gamma_t = []
-    
-
     for epoch in range(EPOCHS):
+
+        # White background
+        img = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255 )  # for at få en hvid baggrund
+        imgclear = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255)  # for at få en hvid baggrund
+
+        blueColor = (255, 50, 50)
+        agentRadius = 3 # for drawing
+
+        # Generate random positions
+        x = np.random.uniform(0, HEIGHT, size=(NUMBER_OF_AGENTS))
+        y = np.random.uniform(0, WIDTH, size=(NUMBER_OF_AGENTS))
+
+        # Generate random velocities
+        vx = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_AGENTS,))
+        vy = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_AGENTS,))
+
+        # Make the flock
+        flock = []
+        for i in range(NUMBER_OF_AGENTS):
+            flock.append(Boids(i, x[i], y[i], vx[i], vy[i], HEIGHT, WIDTH))
+
+    
+        # gamma_t directional alignment values over time.
+        gamma_t = []
         # Time passed
         T = 0.1
 
@@ -458,11 +457,12 @@ def main():
         traces = [[] for _ in range(NUMBER_OF_AGENTS)]
 
         # Do the simulation
-        while (T < DEFAULT_STEPS):
+        while (T < STEPS):
             #while True:
             img = imgclear.copy()  # to clear the image
 
             T = update(flock, T, gamma_t, MAX_SPEED)
+            #print(T)
             #update(flock, T, gamma_t, MAX_SPEED)
 
             #trace save points (test)
@@ -473,7 +473,7 @@ def main():
 
             cv2.imshow("Window", img)
 
-            print(traces)
+            #print(traces)
 
             if cv2.waitKey(1) == ord("q"):
                 break
@@ -481,7 +481,9 @@ def main():
         cv2.destroyAllWindows()
 
         plt.plot(gamma_t)
-        plt.savefig("gamma_t_plot.png")
+        #plt.savefig("gamma_t_plot.png")
+        plt.savefig(f"gamma_t_plot_epoch_{epoch}.png")
+        plt.close()
 
         # Plot trace
         plt.figure()
@@ -490,20 +492,17 @@ def main():
                 xs = [p[0] for p in traces[i]]
                 ys = [p[1] for p in traces[i]]
                 n = len(xs)
-                print("\n")
+                #print("\n")
                 for j in range(n - 1):
                     alpha = 0.20 + 0.75 * (j / (n - 4))
-                    print(alpha)
+                    #print(alpha)
                     plt.plot(xs[j:j+2], ys[j:j+2], color="blue", alpha=alpha, linewidth=1.2)
         plt.xlim(0, WIDTH)
         plt.ylim(0, HEIGHT)
         plt.gca().set_aspect('equal')
-        plt.savefig("trace_plot.png")
-
-
-        plt.plot(gamma_t)
-        plt.savefig("gamma_t_plot.png")
-
+        #plt.savefig("trace_plot.png")
+        plt.savefig(f"trace_plot_epoch_{epoch}.png")
+        plt.close()
 
 # Main
 main()
