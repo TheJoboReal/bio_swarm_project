@@ -1,17 +1,63 @@
 import numpy as np
 import math
+import argparse
 import matplotlib.pyplot as plt
 import cv2
 from agent import *
 
-NUMBER_OF_AGENTS = 30
-STEPS = 100
-MAX_SPEED = 2
-MAX_INITIAL_SPEED = 1
+DEFAULT_NUMBER_OF_AGENTS = 30
+DEFAULT_STEPS = 100
+DEFAULT_MAX_SPEED = 2
+
+DEFAULT_EPOCHS = 1
 
 # Window width and height
-HEIGHT = 700
-WIDTH = 700
+DEFAULT_HEIGHT = 700
+DEFAULT_WIDTH = 700
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Boids Simulation")
+    parser.add_argument("--agents", type=int, default=DEFAULT_NUMBER_OF_AGENTS, help="Number of agents in the simulation")
+    parser.add_argument("--steps", type=int, default=DEFAULT_STEPS, help="Number of simulation steps")
+    parser.add_argument("--max_speed", type=float, default=DEFAULT_MAX_SPEED, help="Maximum speed of agents")
+    parser.add_argument("--epochs", type=int, default=DEFAULT_EPOCHS, help="Number of epochs")
+    parser.add_argument("--height", type=int, default=DEFAULT_HEIGHT, help="Window height")
+    parser.add_argument("--width", type=int, default=DEFAULT_WIDTH, help="Window width")
+    return parser.parse_args()
+
+
+# Calculate the gamma [-1,1] value that represents the drectional alignment. If gamma is approx 1, it indicates near-parallel velocities (strong alignment) and values near or below 0 indicat-ing misalignment. By normalizing direction, this metric isolates directional consensus from speed differences
+def directional_alignment(boid, flock, neighbor):
+    vx_i, vy_i = boid.get_velocity()
+    norm_vi = math.sqrt(vx_i**2 + vy_i**2)
+
+    if norm_vi == 0:
+        return 0
+
+    i = boid.get_id()
+
+    sum_alignment = 0.0
+    neighbor_count = 0
+
+    for j in neighbor:
+        if i == j:
+            continue
+
+        vx_j, vy_j = flock[j].get_velocity()
+        norm_vj = math.sqrt(vx_j**2 + vy_j**2)
+
+        if norm_vj == 0:
+            continue
+
+        dot = vx_i * vx_j + vy_i * vy_j
+        sum_alignment += dot / (norm_vi * norm_vj)
+        neighbor_count += 1
+
+    if neighbor_count == 0:
+        return 0
+
+    return sum_alignment / neighbor_count
 
 
 # Calculate the gamma [-1,1] value that represents the drectional alignment. If gamma is approx 1, it indicates near-parallel velocities (strong alignment) and values near or below 0 indicat-ing misalignment. By normalizing direction, this metric isolates directional consensus from speed differences
@@ -169,11 +215,11 @@ def control_input_position_based_NO_threshold(boid, flock, sensor_range, delta, 
 
     #### Count number of neighbors
     neighbor_count = 0
-    for j in range(NUMBER_OF_AGENTS):
+    for j in range(len(flock)):
         if i != j:
             distance = distance_between_agents(boid, flock[j])
-            if 0 < distance < sensor_range: # "0 <" to avoid dividing by zero later
-                neighbor_count += 1 #Count number of neighbors
+            if 0 < distance < sensor_range:  # "0 <" to avoid dividing by zero later
+                neighbor_count += 1  # Count number of neighbors
 
 
     #### Calculate cohesion separation
@@ -234,8 +280,10 @@ def control_input_position_based_NO_threshold(boid, flock, sensor_range, delta, 
     return control_input_x, control_input_y
 
 
+dt = 0.1  # ???
 
 
+def update(flock, t, gamma_t, MAX_SPEED):
 
 #################### Position Based With Threshold ####################
 def control_input_position_based_with_threshold(boid, flock, sensor_range, delta, t, k):
@@ -369,20 +417,30 @@ def update(flock, t, gamma_t):
 
 
 def main():
-    # White background
-    img = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255)
-    imgclear = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255) 
+    args = parse_args()
+
+    NUMBER_OF_AGENTS = args.agents
+    STEPS = args.steps
+    MAX_SPEED = args.max_speed
+    HEIGHT = args.height
+    WIDTH = args.width
+
+    EPOCHS = args.epochs
+
+
+    img = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255 )  # for at få en hvid baggrund
+    imgclear = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255)  # for at få en hvid baggrund
 
     blueColor = (255, 50, 50)
-    agentRadius = 2
+    agentRadius = 3 # for drawing
 
     # Generate random positions
-    x = np.random.randint(200, 300, size=(NUMBER_OF_AGENTS))
-    y = np.random.randint(200, 300, size=(NUMBER_OF_AGENTS))
+    x = np.random.uniform(0, HEIGHT, size=(NUMBER_OF_AGENTS))
+    y = np.random.uniform(0, WIDTH, size=(NUMBER_OF_AGENTS))
 
     # Generate random velocities
-    vx = np.random.uniform(low=-MAX_INITIAL_SPEED, high=MAX_INITIAL_SPEED, size=(NUMBER_OF_AGENTS,))
-    vy = np.random.uniform(low=-MAX_INITIAL_SPEED, high=MAX_INITIAL_SPEED, size=(NUMBER_OF_AGENTS,))
+    vx = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_AGENTS,))
+    vy = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_AGENTS,))
 
     # Make the flock
     flock = []
@@ -405,35 +463,25 @@ def main():
 
         T = update(flock, T, gamma_t)
 
-        for i in range(NUMBER_OF_AGENTS):
-            xBoid, yBoid = flock[i].get_position()
-            cv2.circle(img, (int(xBoid), int(yBoid)), agentRadius, blueColor, -1)
+            update(flock, T, gamma_t, MAX_SPEED)
 
         #trace save points (test)
         for i in range(NUMBER_OF_AGENTS):
             xBoid, yBoid = flock[i].get_position()
             traces[i].append((xBoid, yBoid))
 
-        cv2.imshow("Window", img)
+            cv2.imshow("Window", img)
 
         print(traces)
 
         if cv2.waitKey(1) == ord("q"):
             break
 
-        # Hvis man vil steppe through, evt med et print i en funktion så man kan nå at stoppe op og se hvad der står.
-        # key = cv2.waitKey(0)
-        #
-        # if key == ord('q'):
-        #     break
-        # elif key == ord('e'):
-        #     hold = not hold
-        #     if not hold:
-        #         continue
-        # elif hold:
-        #     continue
 
-    cv2.destroyAllWindows()
+        cv2.destroyAllWindows()
+
+        plt.plot(gamma_t)
+        plt.savefig("gamma_t_plot.png")
 
     ############# plot trace
     plt.figure()
