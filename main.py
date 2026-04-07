@@ -419,6 +419,8 @@ def main():
     WIDTH = args.width
     MODE = args.mode
 
+    gamma_epoch = []
+
     EPOCHS = args.epochs
     for epoch in range(EPOCHS):
         # White background
@@ -469,9 +471,7 @@ def main():
                 traces[i].append((xBoid, yBoid))
 
             cv2.imshow("Window", img)
-
             # print(traces)
-
             if cv2.waitKey(1) == ord("q"):
                 break
 
@@ -506,6 +506,38 @@ def main():
         # plt.savefig("trace_plot.png")
         plt.savefig(f"trace_plot_epoch_{epoch}.png")
         plt.close()
+
+        gamma_epoch.append(gamma_t)
+
+    gamma_epoch_means = [np.mean(gamma_t) for gamma_t in gamma_epoch]
+    plt.plot(gamma_epoch_means, marker="o")
+    plt.xlabel("Epoch")
+    plt.ylabel("Mean alignment (γ)")
+    plt.title("Alignment over epochs")
+    plt.grid(alpha=0.3)
+    plt.savefig(f"gamma_epoch_means.png")
+    plt.close()
+
+    means = [np.mean(g) for g in gamma_epoch]
+    stds = [np.std(g) for g in gamma_epoch]
+
+    epochs = range(len(means))
+
+    plt.plot(epochs, means, label="Mean γ")
+    plt.fill_between(
+        epochs,
+        np.array(means) - np.array(stds),
+        np.array(means) + np.array(stds),
+        alpha=0.2,
+        label="±1 std",
+    )
+
+    plt.xlabel("Epoch")
+    plt.ylabel("Alignment (γ)")
+    plt.legend()
+    plt.grid(alpha=0.3)
+    plt.savefig("gamma_epoch_stats.png")
+    plt.close()
 
 
 # Main
