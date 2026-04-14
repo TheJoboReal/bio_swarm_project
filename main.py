@@ -5,15 +5,21 @@ import matplotlib.pyplot as plt
 import cv2
 from agent import *
 
+import csv
+
 DEFAULT_NUMBER_OF_AGENTS = 30
 DEFAULT_STEPS = 100
 DEFAULT_MAX_SPEED = 2
 
+DEFAULT_SEED = 0
 DEFAULT_EPOCHS = 1
 
 # Window width and height
 DEFAULT_HEIGHT = 700
 DEFAULT_WIDTH = 700
+
+
+# uv run main.py --agents 50 --steps 40 --max_speed 1.5 --seed 2 --epochs 2 --height 700 --width 700 --mode position_threshold 
 
 # uv run main.py --agents 50 --steps 40 --max_speed 1.5 --epochs 2 --height 700 --width 700 --mode position_threshold 
 # uv run main.py --agents 50 --steps 100 --max_speed 2 --epochs 3 --height 700 --width 700
@@ -23,11 +29,11 @@ def parse_args():
     parser.add_argument("--steps", type=int, default=DEFAULT_STEPS, help="Number of simulation steps")
     parser.add_argument("--max_speed", type=float, default=DEFAULT_MAX_SPEED, help="Maximum speed of agents")
     parser.add_argument("--epochs", type=int, default=DEFAULT_EPOCHS, help="Number of epochs")
+    parser.add_argument("--seed", type=int, default=DEFAULT_SEED, help="Seed for replication")
     parser.add_argument("--height", type=int, default=DEFAULT_HEIGHT, help="Window height")
     parser.add_argument("--width", type=int, default=DEFAULT_WIDTH, help="Window width")
     parser.add_argument("--mode", type=str, default="velocity", choices=["velocity", "position", "position_threshold"], help="Simulation mode: 'velocity', 'position', or 'position_threshold'")
     return parser.parse_args()
-
 
 
 # Calculate the gamma [-1,1] value that represents the drectional alignment. If gamma is approx 1, it indicates near-parallel velocities (strong alignment) and values near or below 0 indicat-ing misalignment. By normalizing direction, this metric isolates directional consensus from speed differences
@@ -168,7 +174,7 @@ def control_input_position_based_NO_threshold(boid, flock, sensor_range, delta, 
     # Get index of current boid
     i = boid.get_id()
 
-    #### Count number of neighbors
+    # Count number of neighbors
     neighbor_count = 0
     for j in range(len(flock)):
         if i != j:
@@ -187,8 +193,6 @@ def control_input_position_based_NO_threshold(boid, flock, sensor_range, delta, 
                 cohesion_separation_gain_psi = 1 - (delta * neighbor_count) / distance
 
                 # Then calculate cohesion_separation control input from cohesion_separation / attraction_repulsive-term
-                    # boid_pos_x, boid_pos_y = boid.get_position()
-                    # neighbor_pos_x, neighbor_pos_y = flock[j].get_position()
                 dx, dy = relative_position(boid, flock[j])
 
                 cohesion_separation_x += cohesion_separation_gain_psi * dx #(neighbor_pos_x - boid_pos_x)
@@ -271,8 +275,6 @@ def control_input_position_based_with_threshold(boid, flock, sensor_range, delta
                 cohesion_separation_gain_psi = 1 - (delta * neighbor_count) / distance
 
                 # Then calculate cohesion_separation control input from cohesion_separation / attraction_repulsive-term
-                    # boid_pos_x, boid_pos_y = boid.get_position()
-                    # neighbor_pos_x, neighbor_pos_y = flock[j].get_position()
                 dx, dy = relative_position(boid, flock[j])
 
                 cohesion_separation_x += (cohesion_separation_gain_psi + phi) * dx #(neighbor_pos_x - boid_pos_x)
@@ -299,7 +301,7 @@ def control_input_position_based_with_threshold(boid, flock, sensor_range, delta
     alignment_y = phi * rel_y_0
 
 
-    ### Control input for boid i
+    # Control input for boid i
     control_input_x = cohesion_separation_x - alignment_x
     control_input_y = cohesion_separation_y - alignment_y
 
@@ -377,6 +379,7 @@ def main():
     HEIGHT = args.height
     WIDTH = args.width
     MODE = args.mode
+    SEED = args.seed
 
     EPOCHS = args.epochs
     for epoch in range(EPOCHS):
@@ -389,6 +392,9 @@ def main():
         agentRadius = 3 # for drawing
 
         # Generate random positions
+        if SEED != 0:
+            np.random.seed(SEED)
+
         x = np.random.uniform(0, HEIGHT, size=(NUMBER_OF_AGENTS))
         y = np.random.uniform(0, WIDTH, size=(NUMBER_OF_AGENTS))
 
@@ -427,36 +433,40 @@ def main():
 
             cv2.imshow("Window", img)
 
-            #print(traces)
-
             if cv2.waitKey(1) == ord("q"):
                 break
 
         cv2.destroyAllWindows()
 
-        plt.plot(gamma_t)
-        #plt.savefig("gamma_t_plot.png")
-        plt.savefig(f"gamma_t_plot_epoch_{epoch}.png")
-        plt.close()
+        with open(f'mode_{MODE}_seed_{SEED}_epoch_{epoch}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_gamma.csv', 'w', newline='') as file: # add number of agents and steps
+            writer = csv.writer(file)
+            for item in gamma_t:
+                writer.writerow([item])
+        
+        # plt.plot(gamma_t)
+        # plt.plot(gamma_t)
+        # #plt.savefig("gamma_t_plot.png")
+        # plt.savefig(f"gamma_t_plot_epoch_{epoch}.png")
+        # plt.close()
 
         # Plot trace
-        plt.figure()
-        for i in range(NUMBER_OF_AGENTS):
-            if len(traces[i]) > 1:
-                xs = [p[0] for p in traces[i]]
-                ys = [p[1] for p in traces[i]]
-                n = len(xs)
-                #print("\n")
-                for j in range(n - 1):
-                    alpha = 0.20 + 0.75 * (j / (n - 4))
-                    #print(alpha)
-                    plt.plot(xs[j:j+2], ys[j:j+2], color="blue", alpha=alpha, linewidth=1.2)
-        plt.xlim(0, WIDTH)
-        plt.ylim(0, HEIGHT)
-        plt.gca().set_aspect('equal')
-        #plt.savefig("trace_plot.png")
-        plt.savefig(f"trace_plot_epoch_{epoch}.png")
-        plt.close()
+        # plt.figure()
+        # for i in range(NUMBER_OF_AGENTS):
+        #     if len(traces[i]) > 1:
+        #         xs = [p[0] for p in traces[i]]
+        #         ys = [p[1] for p in traces[i]]
+        #         n = len(xs)
+        #         #print("\n")
+        #         for j in range(n - 1):
+        #             alpha = 0.20 + 0.75 * (j / (n - 4))
+        #             #print(alpha)
+        #             plt.plot(xs[j:j+2], ys[j:j+2], color="blue", alpha=alpha, linewidth=1.2)
+        # plt.xlim(0, WIDTH)
+        # plt.ylim(0, HEIGHT)
+        # plt.gca().set_aspect('equal')
+        # #plt.savefig("trace_plot.png")
+        # plt.savefig(f"trace_plot_epoch_{epoch}.png")
+        # plt.close()
 
 # Main
 main()
