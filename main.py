@@ -412,7 +412,10 @@ def main():
     CV2 = args.cv2
     RUNS = args.runs
 
-    filename = f'mode_{MODE}_seedAtEnd_{RUNS}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_gamma.csv'
+    filename_gamma = f'mode_{MODE}_seedAtEnd_{RUNS}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_gamma.csv'
+    filename_interagent_distance = f'mode_{MODE}_seedAtEnd_{RUNS}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_interagent_distance.csv'
+    filename_average_agent_speeds = f'mode_{MODE}_seedAtEnd_{RUNS}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_average_agent_speeds.csv'
+
     for run in range(RUNS):
 
         # White background
@@ -475,7 +478,6 @@ def main():
             average_agent_speeds_for_each_run.append(average_speed(flock))
 
 
-
             if CV2 != 0:
                 for i in range(NUMBER_OF_AGENTS):
                     xBoid, yBoid = flock[i].get_position()
@@ -484,16 +486,24 @@ def main():
 
                 cv2.imshow("Window", img)
 
-            if cv2.waitKey(1) == ord("q"):
-                break
+                if cv2.waitKey(1) == ord("q"):
+                    break
 
 
         cv2.destroyAllWindows()
 
-        with open(filename, 'a' if run > 0 else 'w', newline='') as file: # each row is a run, so going accross is the steps
+        # gamma csv files
+        with open(filename_gamma, 'a' if run > 0 else 'w', newline='') as file: # each row is a run, so going accross is the steps
             writer = csv.writer(file)
             writer.writerow(gamma_t)
  
+        with open(filename_interagent_distance, 'a' if run > 0 else 'w', newline='') as file: # each row is a run, so going accross is the steps
+            writer = csv.writer(file)
+            writer.writerow(average_inter_agent_distances_for_each_run)
+
+        with open(filename_average_agent_speeds, 'a' if run > 0 else 'w', newline='') as file: # each row is a run, so going accross is the steps
+            writer = csv.writer(file)
+            writer.writerow(average_agent_speeds_for_each_run)
 
         # Plot trace
         # plt.figure()
