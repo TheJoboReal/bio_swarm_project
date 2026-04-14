@@ -8,7 +8,7 @@ from agent import *
 import csv
 
 DEFAULT_NUMBER_OF_AGENTS = 30
-DEFAULT_STEPS = 100
+DEFAULT_STEPS = 50
 DEFAULT_MAX_SPEED = 2
 
 DEFAULT_SEED = 0
@@ -34,6 +34,34 @@ def parse_args():
     parser.add_argument("--width", type=int, default=DEFAULT_WIDTH, help="Window width")
     parser.add_argument("--mode", type=str, default="velocity", choices=["velocity", "position", "position_threshold"], help="Simulation mode: 'velocity', 'position', or 'position_threshold'")
     return parser.parse_args()
+
+
+
+# Inter-agent distance mesure (like fig 5b in our paper)
+# Input is the entire flock.
+# Output is then a list of distances between each pair of boids (hopefully without duplicates).
+def inter_agent_distance(flock):
+    distances = []
+
+    for boid_i in range(len(flock)):
+        for boid_j in range(boid_i+1, len(flock)): # Delen med "boid_i+1" skipper forrige distancer, der allerede er udrenget.
+            dist = distance_between_agents(flock[boid_i], flock[boid_j])
+            distances.append(dist)
+    
+    return np.array(distances)
+
+# Helper function for average speed. Input is the flock at some timestep. Output the the average speeed at that timeput.
+def average_speed(flock):
+    speeds = [] #Liste
+    for boid_i in range(len(flock)):
+        vx, vy = flock[boid_i].get_velocity() #Get velocities
+        speed = np.sqrt(vx**2 + vy**2) #Get speeds
+        speeds.append(speed) 
+    return np.mean(speeds) #Return average
+
+
+
+
 
 
 # Calculate the gamma [-1,1] value that represents the drectional alignment. If gamma is approx 1, it indicates near-parallel velocities (strong alignment) and values near or below 0 indicat-ing misalignment. By normalizing direction, this metric isolates directional consensus from speed differences
@@ -330,6 +358,7 @@ def update(flock, t, gamma_t, MAX_SPEED, mode):
         vx, vy = boid_og.get_velocity()
 
 
+
         # Different modes:
         if mode == "velocity": # Velocity based control
             u_x_vel_based, u_y_vel_based = control_input_velocity_based(boid_og, flock, sensor_range, delta)
@@ -365,9 +394,7 @@ def update(flock, t, gamma_t, MAX_SPEED, mode):
     gamma_value = gamma_sum / len(flock)
     gamma_t.append(gamma_value)
 
-    # print("t: ", t)
     return round(t, 1)
-    #print(gamma_value)
 
 
 def main():
@@ -395,8 +422,8 @@ def main():
         if SEED != 0:
             np.random.seed(SEED)
 
-        x = np.random.uniform(0, HEIGHT, size=(NUMBER_OF_AGENTS))
-        y = np.random.uniform(0, WIDTH, size=(NUMBER_OF_AGENTS))
+        x = np.random.uniform(200, 500, size=(NUMBER_OF_AGENTS))
+        y = np.random.uniform(200, 500, size=(NUMBER_OF_AGENTS))
 
         # Generate random velocities
         vx = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_AGENTS,))
@@ -407,9 +434,17 @@ def main():
         for i in range(NUMBER_OF_AGENTS):
             flock.append(Boids(i, x[i], y[i], vx[i], vy[i], HEIGHT, WIDTH))
 
-    
+
+        #Inter-agent distances lists (a eval metric)
+        average_inter_agent_distances_for_each_run = []
+        time_steps = []
+
+        #Average sppeds lists (a eval metric)
+        average_agent_speeds_for_each_run = []
+
         # gamma_t directional alignment values over time.
         gamma_t = []
+
         # Time passed
         T = 0.1
 
@@ -421,9 +456,20 @@ def main():
             #while True:
             img = imgclear.copy()  # to clear the image
 
+            #Update
             T = update(flock, T, gamma_t, MAX_SPEED, MODE)
-            #print(T)
-            #update(flock, T, gamma_t, MAX_SPEED)
+            
+            #Inter-agent distance matric
+            distances = inter_agent_distance(flock) #First: Calculates all the distances between all possible boid/agent pairs
+            average_inter_agent_distances_for_each_run.append(np.mean(distances)) #Second: Calulate the average and save to thhe list.
+
+            #Time step list
+            time_steps.append(T)
+
+            #Average agent speeds
+            average_agent_speeds_for_each_run.append(average_speed(flock))
+
+
 
             #trace save points (test)
             for i in range(NUMBER_OF_AGENTS):
@@ -436,13 +482,40 @@ def main():
             if cv2.waitKey(1) == ord("q"):
                 break
 
+
         cv2.destroyAllWindows()
 
         with open(f'mode_{MODE}_seed_{SEED}_epoch_{epoch}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_gamma.csv', 'w', newline='') as file: # add number of agents and steps
             writer = csv.writer(file)
             for item in gamma_t:
                 writer.writerow([item])
-        
+
+
+
+
+
+
+        #Simple plot for inter-agent distances
+        print(len(average_inter_agent_distances_for_each_run)) 
+        plt.plot(time_steps, average_inter_agent_distances_for_each_run)
+        plt.xlim(0, STEPS)
+        plt.xlabel("Time [s]")
+        plt.ylabel("Average distance [m?]")
+        plt.show()
+
+
+        #Simpl plot for average speeds
+        print(len(average_agent_speeds_for_each_run))
+        plt.plot(time_steps, average_agent_speeds_for_each_run)
+        plt.xlabel("Time [s]")
+        plt.ylim(0, MAX_SPEED+0.25)
+        plt.xlim(0, STEPS)
+        plt.ylabel("Average agent speed [m/s]")
+        plt.axhline(y=MAX_SPEED, linestyle="--", color="grey", label=r"$v_{\max}$")
+        plt.show()
+
+
+        # # Plot gamma
         # plt.plot(gamma_t)
         # plt.plot(gamma_t)
         # #plt.savefig("gamma_t_plot.png")
