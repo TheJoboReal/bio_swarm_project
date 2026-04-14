@@ -8,3 +8,4 @@
 - [x] Add argparse for seed for random position and velocity so it is replicatable
 - [] Increment seed with each epoch / run
 - [] Append gamma_t list to list
+- [] Add argparse to enable/ disable opencv

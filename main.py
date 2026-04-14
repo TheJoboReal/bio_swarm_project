@@ -5,31 +5,32 @@ import matplotlib.pyplot as plt
 import cv2
 from agent import *
 
+import os # for checking if the csv files exists
 import csv
 
 DEFAULT_NUMBER_OF_AGENTS = 30
 DEFAULT_STEPS = 100
 DEFAULT_MAX_SPEED = 2
 
+DEFAULT_CV2 = 1
 DEFAULT_SEED = 0
-DEFAULT_EPOCHS = 1
+DEFAULT_RUNS = 1
 
 # Window width and height
 DEFAULT_HEIGHT = 700
 DEFAULT_WIDTH = 700
 
 
-# uv run main.py --agents 50 --steps 40 --max_speed 1.5 --seed 2 --epochs 2 --height 700 --width 700 --mode position_threshold 
-
-# uv run main.py --agents 50 --steps 40 --max_speed 1.5 --epochs 2 --height 700 --width 700 --mode position_threshold 
+# uv run main.py --agents 50 --steps 30 --max_speed 2 --seed 2 --cv2 0 --runs 5 --mode position_threshold
 # uv run main.py --agents 50 --steps 100 --max_speed 2 --epochs 3 --height 700 --width 700
 def parse_args():
     parser = argparse.ArgumentParser(description="Boids Simulation")
     parser.add_argument("--agents", type=int, default=DEFAULT_NUMBER_OF_AGENTS, help="Number of agents in the simulation")
     parser.add_argument("--steps", type=int, default=DEFAULT_STEPS, help="Number of simulation steps")
     parser.add_argument("--max_speed", type=float, default=DEFAULT_MAX_SPEED, help="Maximum speed of agents")
-    parser.add_argument("--epochs", type=int, default=DEFAULT_EPOCHS, help="Number of epochs")
+    parser.add_argument("--runs", type=int, default=DEFAULT_RUNS, help="Number of runs")
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED, help="Seed for replication")
+    parser.add_argument("--cv2", type=int, default=DEFAULT_CV2, help="Enable or disable opencv")
     parser.add_argument("--height", type=int, default=DEFAULT_HEIGHT, help="Window height")
     parser.add_argument("--width", type=int, default=DEFAULT_WIDTH, help="Window width")
     parser.add_argument("--mode", type=str, default="velocity", choices=["velocity", "position", "position_threshold"], help="Simulation mode: 'velocity', 'position', or 'position_threshold'")
@@ -281,6 +282,7 @@ def control_input_position_based_with_threshold(boid, flock, sensor_range, delta
                 cohesion_separation_y += (cohesion_separation_gain_psi + phi) * dy #(neighbor_pos_y - boid_pos_y)
 
 
+
     ### Calculate alignment (Position based!)
     rel_x_0 = 0.0
     rel_y_0 = 0.0
@@ -380,9 +382,11 @@ def main():
     WIDTH = args.width
     MODE = args.mode
     SEED = args.seed
+    CV2 = args.cv2
+    RUNS = args.runs
 
-    EPOCHS = args.epochs
-    for epoch in range(EPOCHS):
+    filename = f'mode_{MODE}_seedAtEnd_{RUNS}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_gamma.csv'
+    for run in range(RUNS):
 
         # White background
         img = (np.ones((HEIGHT, WIDTH, 3), dtype=np.uint8) * 255 )  # for at få en hvid baggrund
@@ -394,9 +398,10 @@ def main():
         # Generate random positions
         if SEED != 0:
             np.random.seed(SEED)
+            SEED += 1
 
-        x = np.random.uniform(0, HEIGHT, size=(NUMBER_OF_AGENTS))
-        y = np.random.uniform(0, WIDTH, size=(NUMBER_OF_AGENTS))
+        x = np.random.uniform(200, HEIGHT-200, size=(NUMBER_OF_AGENTS))
+        y = np.random.uniform(200, WIDTH-200, size=(NUMBER_OF_AGENTS))
 
         # Generate random velocities
         vx = np.random.uniform(low=-MAX_SPEED, high=MAX_SPEED, size=(NUMBER_OF_AGENTS,))
@@ -407,9 +412,9 @@ def main():
         for i in range(NUMBER_OF_AGENTS):
             flock.append(Boids(i, x[i], y[i], vx[i], vy[i], HEIGHT, WIDTH))
 
-    
         # gamma_t directional alignment values over time.
         gamma_t = []
+
         # Time passed
         T = 0.1
 
@@ -422,32 +427,24 @@ def main():
             img = imgclear.copy()  # to clear the image
 
             T = update(flock, T, gamma_t, MAX_SPEED, MODE)
-            #print(T)
-            #update(flock, T, gamma_t, MAX_SPEED)
 
-            #trace save points (test)
-            for i in range(NUMBER_OF_AGENTS):
-                xBoid, yBoid = flock[i].get_position()
-                cv2.circle(img, (int(xBoid), int(yBoid)), agentRadius, blueColor, -1)
-                traces[i].append((xBoid, yBoid))
+            if CV2 != 0:
+                for i in range(NUMBER_OF_AGENTS):
+                    xBoid, yBoid = flock[i].get_position()
+                    cv2.circle(img, (int(xBoid), int(yBoid)), agentRadius, blueColor, -1)
+                    traces[i].append((xBoid, yBoid))
 
-            cv2.imshow("Window", img)
+                cv2.imshow("Window", img)
 
             if cv2.waitKey(1) == ord("q"):
                 break
 
         cv2.destroyAllWindows()
 
-        with open(f'mode_{MODE}_seed_{SEED}_epoch_{epoch}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_gamma.csv', 'w', newline='') as file: # add number of agents and steps
+        with open(filename, 'a' if run > 0 else 'w', newline='') as file: # each row is a run, so going accross is the steps
             writer = csv.writer(file)
-            for item in gamma_t:
-                writer.writerow([item])
-        
-        # plt.plot(gamma_t)
-        # plt.plot(gamma_t)
-        # #plt.savefig("gamma_t_plot.png")
-        # plt.savefig(f"gamma_t_plot_epoch_{epoch}.png")
-        # plt.close()
+            writer.writerow(gamma_t)
+ 
 
         # Plot trace
         # plt.figure()
