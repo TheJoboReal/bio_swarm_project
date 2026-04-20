@@ -412,9 +412,9 @@ def main():
     CV2 = args.cv2
     RUNS = args.runs
 
-    filename_gamma = f'mode_{MODE}_seedAtEnd_{RUNS}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_gamma.csv'
-    filename_interagent_distance = f'mode_{MODE}_seedAtEnd_{RUNS}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_interagent_distance.csv'
-    filename_average_agent_speeds = f'mode_{MODE}_seedAtEnd_{RUNS}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_average_agent_speeds.csv'
+    filename_gamma = f'mode_{MODE}_seedAtEnd_{SEED}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_gamma.csv'
+    filename_interagent_distance = f'mode_{MODE}_seedAtEnd_{SEED}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_interagent_distance.csv'
+    filename_average_agent_speeds = f'mode_{MODE}_seedAtEnd_{SEED}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_average_agent_speeds.csv'
 
     for run in range(RUNS):
 
