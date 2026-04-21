@@ -20,7 +20,8 @@ DEFAULT_RUNS = 1
 DEFAULT_HEIGHT = 700
 DEFAULT_WIDTH = 700
 
-
+# uv run main.py --agents 50 --steps 100 --max_speed 2 --seed 20 --cv2 0 --runs 500 --mode position
+#
 # uv run main.py --agents 50 --steps 30 --max_speed 2 --seed 2 --cv2 0 --runs 5 --mode position_threshold
 # uv run main.py --agents 50 --steps 100 --max_speed 2 --epochs 3 --height 700 --width 700
 def parse_args():
@@ -371,7 +372,7 @@ def update(flock, t, gamma_t, MAX_SPEED, mode):
             vx += dt * u_x_pos_based
             vy += dt * u_y_pos_based
         elif mode == "position_threshold": # Position based control with threshold
-            u_x_pos_based_threshold, u_y_pos_based_threshold = control_input_position_based_with_threshold(boid_og, flock, sensor_range, delta, t, k=0.1)
+            u_x_pos_based_threshold, u_y_pos_based_threshold = control_input_position_based_with_threshold(boid_og, flock, sensor_range, delta, t, k=0.2)
             vx += dt * u_x_pos_based_threshold
             vy += dt * u_y_pos_based_threshold
         else:
@@ -412,9 +413,9 @@ def main():
     CV2 = args.cv2
     RUNS = args.runs
 
-    filename_gamma = f'mode_{MODE}_seedAtEnd_{SEED}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_gamma.csv'
-    filename_interagent_distance = f'mode_{MODE}_seedAtEnd_{SEED}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_interagent_distance.csv'
-    filename_average_agent_speeds = f'mode_{MODE}_seedAtEnd_{SEED}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_average_agent_speeds.csv'
+    filename_gamma = f'mode_{MODE}_runs_{RUNS}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_gamma.csv'
+    filename_interagent_distance = f'mode_{MODE}_runs_{RUNS}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_interagent_distance.csv'
+    filename_average_agent_speeds = f'mode_{MODE}_runs_{RUNS}_steps_{STEPS}_agents_{NUMBER_OF_AGENTS}_average_agent_speeds.csv'
 
     for run in range(RUNS):
 

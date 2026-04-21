@@ -33,15 +33,17 @@ def get_title_info(filename):
             info["steps"] = parts[i+1]
         elif part == "agents":
             info["agents"] = parts[i+1]
-        elif part.startswith("seed"):
-            info["seed"] = parts[i+1]
+        elif part == "runs":
+            info["runs"] = parts[i+1]
 
     return info
 
 def make_title(filename):
     info = get_title_info(filename)
 
-    return f"{info['seed']} | {info['steps']} steps | {info['agents']} agents"
+    return f"{info['runs']} runs | {info['steps']} steps | {info['agents']} agents"
+
+
 
 def load_csv_to_list(filename):
     data = []
@@ -61,7 +63,6 @@ def plot_alone(fileName):
 
     for run in gamma_t:
         plt.plot(run)
-        
 
     dt = 0.1 # vores sample tid i simuleringen
 
@@ -70,8 +71,53 @@ def plot_alone(fileName):
     plt.savefig(fileName + "_plot.png")
 
 
+# gamma 
+def plot_together_gamma(fileName1, fileName2, fileName3):
+    plt.figure()
+    
+    plotName = get_last_word(fileName1)
 
-def plot_together(fileName1, fileName2, fileName3):
+    gamma_t_1 = load_csv_to_list(fileName1)
+    # start by take avg of each file
+    # print(gamma_t_1)
+    
+    arr = np.array(gamma_t_1)
+    arr_mean = np.mean(arr, axis=0)
+
+    dt = 0.1 # vores sample tid i simuleringen
+    time = np.arange(len(arr_mean)) * dt
+    # print(arr)
+    # print(arr.shape)
+    # print(arr_mean)
+    # print(arr_mean.shape)
+    #plt.plot(arr_mean, label="position (no thr)")
+
+    plt.plot(time, arr_mean, label="position (no thr)", color="blue")
+
+    gamma_t_2 = load_csv_to_list(fileName2)
+    arr = np.array(gamma_t_2)
+    arr_mean = np.mean(arr, axis=0)
+    # plt.plot(arr_mean, label="position (thr)")
+    plt.plot(time, arr_mean, label="position (thr)", color="orange") 
+    
+    gamma_t_3 = load_csv_to_list(fileName3)
+    arr = np.array(gamma_t_3)
+    arr_mean = np.mean(arr, axis=0)
+    # plt.plot(arr_mean, label="velocity")
+    plt.plot(time, arr_mean, label="velocity", color="green")
+    
+    steps = len(gamma_t_1[0])
+    
+    plt.legend()
+    plt.title(make_title(fileName1))
+    plt.xlabel(f'Time [s]')
+    plt.ylabel(r'Alignment score $\gamma$')
+    plt.savefig(f"All_3_modes_{plotName}.png")
+    plt.close()
+
+
+# distance
+def plot_together_distance(fileName1, fileName2, fileName3):
     plt.figure()
     
     plotName = get_last_word(fileName1)
@@ -81,56 +127,95 @@ def plot_together(fileName1, fileName2, fileName3):
     # print(gamma_t_1)
     arr = np.array(gamma_t_1)
     arr_mean = np.mean(arr, axis=0)
-    # print(arr)
-    # print(arr.shape)
-    # print(arr_mean)
-    # print(arr_mean.shape)
-    #plt.plot(arr_mean, label="position (no thr)")
-    plt.plot(arr_mean, label="position (no thr)", color="blue")
+
+    dt = 0.1 # vores sample tid i simuleringen
+    time = np.arange(len(arr_mean)) * dt
+
+    plt.plot(time, arr_mean, label="position (no thr)", color="blue")
 
     gamma_t_2 = load_csv_to_list(fileName2)
     arr = np.array(gamma_t_2)
     arr_mean = np.mean(arr, axis=0)
     # plt.plot(arr_mean, label="position (thr)")
-    plt.plot(arr_mean, label="position (thr)", color="orange") 
+    plt.plot(time, arr_mean, label="position (thr)", color="orange") 
     
     gamma_t_3 = load_csv_to_list(fileName3)
     arr = np.array(gamma_t_3)
     arr_mean = np.mean(arr, axis=0)
     # plt.plot(arr_mean, label="velocity")
-    plt.plot(arr_mean, label="velocity", color="green")
+    plt.plot(time, arr_mean, label="velocity", color="green")
     
     steps = len(gamma_t_1[0])
     dt = 0.1 # vores sample tid i simuleringen
-
+    
     plt.legend()
     plt.title(make_title(fileName1))
-    plt.xlabel(f'Total period {steps * dt} s')
-    plt.ylabel(plotName)
+    plt.xlabel(f'Time [s]')
+    plt.ylabel(r'Distance [m]')
     plt.savefig(f"All_3_modes_{plotName}.png")
     plt.close()
 
 
+# speed
+def plot_together_speed(fileName1, fileName2, fileName3):
+    plt.figure()
+    
+    plotName = get_last_word(fileName1)
+
+    gamma_t_1 = load_csv_to_list(fileName1)
+    # start by take avg of each file
+    # print(gamma_t_1)
+    arr = np.array(gamma_t_1)
+    arr_mean = np.mean(arr, axis=0)
+    dt = 0.1 # vores sample tid i simuleringen
+    time = np.arange(len(arr_mean)) * dt
+
+    plt.plot(time, arr_mean, label="position (no thr)", color="blue")
+
+    gamma_t_2 = load_csv_to_list(fileName2)
+    arr = np.array(gamma_t_2)
+    arr_mean = np.mean(arr, axis=0)
+    # plt.plot(arr_mean, label="position (thr)")
+    plt.plot(time, arr_mean, label="position (thr)", color="orange") 
+    
+    gamma_t_3 = load_csv_to_list(fileName3)
+    arr = np.array(gamma_t_3)
+    arr_mean = np.mean(arr, axis=0)
+    # plt.plot(arr_mean, label="velocity")
+    plt.plot(time, arr_mean, label="velocity", color="green")
+    
+    steps = len(gamma_t_1[0])
+    dt = 0.1 # vores sample tid i simuleringen
+    
+    plt.legend()
+    plt.title(make_title(fileName1))
+    plt.xlabel(f'Time [s]')
+    plt.ylabel(r'Average speed $[m/s]$')
+    plt.savefig(f"All_3_modes_{plotName}.png")
+    plt.close()
+
+
+
+
 def main():
-
-
-    fileName_1 = 'mode_position_seedAtEnd_20_steps_30_agents_50_gamma.csv' # position
-    fileName_2 = 'mode_position_threshold_seedAtEnd_20_steps_30_agents_50_gamma.csv' # position with threshold
-    fileName_3 = 'mode_velocity_seedAtEnd_20_steps_30_agents_50_gamma.csv' # velocity mode
-    plot_together(fileName_1, fileName_2, fileName_3)
-
     # plot_alone(fileName)
+    # Gamma
+    fileName_1 = 'mode_position_runs_200_steps_100_agents_50_gamma.csv' # position
+    fileName_2 = 'mode_position_threshold_runs_200_steps_100_agents_50_gamma.csv' # position with threshold
+    fileName_3 = 'mode_velocity_runs_200_steps_100_agents_50_gamma.csv' # velocity mode
+    plot_together_gamma(fileName_1, fileName_2, fileName_3)
 
-    fileName_1 = 'mode_position_seedAtEnd_20_steps_30_agents_50_average_agent_speeds.csv' # position
-    fileName_2 = 'mode_position_threshold_seedAtEnd_20_steps_30_agents_50_average_agent_speeds.csv' # position with threshold
-    fileName_3 = 'mode_velocity_seedAtEnd_20_steps_30_agents_50_average_agent_speeds.csv' # velocity mode
-    plot_together(fileName_1, fileName_2, fileName_3)
+    # Speed
+    fileName_1 = 'mode_position_runs_200_steps_100_agents_50_average_agent_speeds.csv' # position
+    fileName_2 = 'mode_position_threshold_runs_200_steps_100_agents_50_average_agent_speeds.csv' # position with threshold
+    fileName_3 = 'mode_velocity_runs_200_steps_100_agents_50_average_agent_speeds.csv' # velocity mode
+    plot_together_speed(fileName_1, fileName_2, fileName_3)
 
-
-    fileName_1 = 'mode_position_seedAtEnd_20_steps_30_agents_50_interagent_distance.csv' # position
-    fileName_2 = 'mode_position_threshold_seedAtEnd_20_steps_30_agents_50_interagent_distance.csv' # position with threshold
-    fileName_3 = 'mode_velocity_seedAtEnd_20_steps_30_agents_50_interagent_distance.csv' # velocity mode
-    plot_together(fileName_1, fileName_2, fileName_3)
+    # Distance
+    fileName_1 = 'mode_position_runs_200_steps_100_agents_50_interagent_distance.csv' # position
+    fileName_2 = 'mode_position_threshold_runs_200_steps_100_agents_50_interagent_distance.csv' # position with threshold
+    fileName_3 = 'mode_velocity_runs_200_steps_100_agents_50_interagent_distance.csv' # velocity mode
+    plot_together_distance(fileName_1, fileName_2, fileName_3)
 
 # Main
 main()
