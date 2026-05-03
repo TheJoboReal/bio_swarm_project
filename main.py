@@ -372,7 +372,7 @@ def update(flock, t, gamma_t, MAX_SPEED, mode):
             vx += dt * u_x_pos_based
             vy += dt * u_y_pos_based
         elif mode == "position_threshold": # Position based control with threshold
-            u_x_pos_based_threshold, u_y_pos_based_threshold = control_input_position_based_with_threshold(boid_og, flock, sensor_range, delta, t, k=0.2)
+            u_x_pos_based_threshold, u_y_pos_based_threshold = control_input_position_based_with_threshold(boid_og, flock, sensor_range, delta, t, k=0.03)
             vx += dt * u_x_pos_based_threshold
             vy += dt * u_y_pos_based_threshold
         else:

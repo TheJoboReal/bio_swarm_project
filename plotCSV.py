@@ -108,10 +108,13 @@ def plot_together_gamma(fileName1, fileName2, fileName3):
     
     steps = len(gamma_t_1[0])
     
+    plt.axhline(1, linestyle='--')
+    
     plt.legend()
     plt.title(make_title(fileName1))
     plt.xlabel(f'Time [s]')
     plt.ylabel(r'Alignment score $\gamma$')
+    plt.ylim(-1, 1.1) # to make it plot from -1 to 1
     plt.savefig(f"All_3_modes_{plotName}.png")
     plt.close()
 
@@ -200,21 +203,21 @@ def plot_together_speed(fileName1, fileName2, fileName3):
 def main():
     # plot_alone(fileName)
     # Gamma
-    fileName_1 = 'mode_position_runs_200_steps_100_agents_50_gamma.csv' # position
-    fileName_2 = 'mode_position_threshold_runs_200_steps_100_agents_50_gamma.csv' # position with threshold
-    fileName_3 = 'mode_velocity_runs_200_steps_100_agents_50_gamma.csv' # velocity mode
+    fileName_1 = 'mode_position_runs_100_steps_100_agents_50_gamma.csv' # position
+    fileName_2 = 'mode_position_threshold_runs_100_steps_100_agents_50_gamma.csv' # position with threshold
+    fileName_3 = 'mode_velocity_runs_100_steps_100_agents_50_gamma.csv' # velocity mode
     plot_together_gamma(fileName_1, fileName_2, fileName_3)
 
     # Speed
-    fileName_1 = 'mode_position_runs_200_steps_100_agents_50_average_agent_speeds.csv' # position
-    fileName_2 = 'mode_position_threshold_runs_200_steps_100_agents_50_average_agent_speeds.csv' # position with threshold
-    fileName_3 = 'mode_velocity_runs_200_steps_100_agents_50_average_agent_speeds.csv' # velocity mode
+    fileName_1 = 'mode_position_runs_100_steps_100_agents_50_average_agent_speeds.csv' # position
+    fileName_2 = 'mode_position_threshold_runs_100_steps_100_agents_50_average_agent_speeds.csv' # position with threshold
+    fileName_3 = 'mode_velocity_runs_100_steps_100_agents_50_average_agent_speeds.csv' # velocity mode
     plot_together_speed(fileName_1, fileName_2, fileName_3)
 
     # Distance
-    fileName_1 = 'mode_position_runs_200_steps_100_agents_50_interagent_distance.csv' # position
-    fileName_2 = 'mode_position_threshold_runs_200_steps_100_agents_50_interagent_distance.csv' # position with threshold
-    fileName_3 = 'mode_velocity_runs_200_steps_100_agents_50_interagent_distance.csv' # velocity mode
+    fileName_1 = 'mode_position_runs_100_steps_100_agents_50_interagent_distance.csv' # position
+    fileName_2 = 'mode_position_threshold_runs_100_steps_100_agents_50_interagent_distance.csv' # position with threshold
+    fileName_3 = 'mode_velocity_runs_100_steps_100_agents_50_interagent_distance.csv' # velocity mode
     plot_together_distance(fileName_1, fileName_2, fileName_3)
 
 # Main
