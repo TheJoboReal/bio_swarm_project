@@ -250,6 +250,7 @@ def control_input_position_based_NO_threshold(boid, flock, sensor_range, delta, 
                 # Get initial positions
                 boid_pos_x_init, boid_pos_y_init = boid.get_initial_position()
                 neighbor_pos_x_init, neighbor_pos_y_init = flock[j].get_initial_position()
+                
                 # Initial relative position
                 rel_x_0 = neighbor_pos_x_init - boid_pos_x_init
                 rel_y_0 = neighbor_pos_y_init - boid_pos_y_init
@@ -289,7 +290,8 @@ def control_input_position_based_with_threshold(boid, flock, sensor_range, delta
     ### Calculate time-dependt alignment gain phi
     phi = 0.0
     if 0 < t <= 1/k:
-        phi = neighbor_count / t
+        # phi = neighbor_count / t
+        phi = 1 / t
     elif t > 1/k:
         phi = k * neighbor_count
 
@@ -309,7 +311,6 @@ def control_input_position_based_with_threshold(boid, flock, sensor_range, delta
 
                 cohesion_separation_x += (cohesion_separation_gain_psi + phi) * dx #(neighbor_pos_x - boid_pos_x)
                 cohesion_separation_y += (cohesion_separation_gain_psi + phi) * dy #(neighbor_pos_y - boid_pos_y)
-
 
 
     ### Calculate alignment (Position based!)
@@ -372,7 +373,7 @@ def update(flock, t, gamma_t, MAX_SPEED, mode):
             vx += dt * u_x_pos_based
             vy += dt * u_y_pos_based
         elif mode == "position_threshold": # Position based control with threshold
-            u_x_pos_based_threshold, u_y_pos_based_threshold = control_input_position_based_with_threshold(boid_og, flock, sensor_range, delta, t, k=0.03)
+            u_x_pos_based_threshold, u_y_pos_based_threshold = control_input_position_based_with_threshold(boid_og, flock, sensor_range, delta, t, k=0.15)
             vx += dt * u_x_pos_based_threshold
             vy += dt * u_y_pos_based_threshold
         else:
