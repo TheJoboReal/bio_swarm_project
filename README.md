@@ -48,4 +48,4 @@ After generating CSV files for all three modes, run:
 ```
 python plotCSV.py
 ```
-Pleas note, that the plotCSV.py expects runs = 200, steps = 100, and agents = 50. 
+Please note, that the plotCSV.py expects runs = 200, steps = 100, and agents = 50. 
