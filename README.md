@@ -3,6 +3,8 @@
 This project was created by Kasper Bloch Mathiasen (kmath22@student.sdu.dk),  Aksel Møller-Hansen (akmoe22@student.sdu.dk) and Harald Bay Baastrup (hniel22@student.sdu.dk).
 The project was done as part of the course "Bio-Inspired Autonomous Systems", where the task was to replicate the paper "Position-Based Flocking for Persistent Alignment without Velocity Sensing" by Jond et al., which implemented a alignment methods without velocity sensing. 
 
+Read the paper [here](report.pdf)
+
 
 ## Requirements:
 The following libraries needs to be installed:
